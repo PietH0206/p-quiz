@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1E0C27">
+<title>P-Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#1E0C27;--surface:#2C1538;--text:#F8EEFB;--muted:#BBA3C4;--line:#4A2B58;
+  --accent:#FF4F97;--on-accent:#1A0820;--card-text:#1A0820;
+  --head:"Unbounded",system-ui,sans-serif;--body:"Figtree",system-ui,-apple-system,sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme:light){
+  :root{--bg:#F7EEF6;--surface:#FFFFFF;--text:#2A1033;--muted:#6B5573;--line:#E1CFE0;--accent:#D81B66;color-scheme:light}
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg)}
+body{color:var(--text);font-family:var(--body);font-size:17px;line-height:1.45;-webkit-font-smoothing:antialiased;
+  padding:env(safe-area-inset-top,0) env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+main{max-width:28rem;margin:0 auto;padding:1rem 1rem 2rem;min-height:100dvh;display:flex;flex-direction:column}
+[hidden]{display:none!important}
+.screen{display:flex;flex-direction:column;flex:1}
+h1{font-family:var(--head);font-weight:800;font-size:2.4rem;line-height:1;letter-spacing:-.02em;margin:.75rem 0 .6rem}
+h2{font-family:var(--head);font-weight:700;font-size:1.05rem;margin:0}
+p{margin:0 0 .9rem}
+.muted{color:var(--muted)}
+.small{font-size:.9rem}
+a{color:var(--accent)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn{display:block;width:100%;border:0;border-radius:16px;padding:1rem 1.2rem;font-weight:700;font-size:1.08rem}
+.btn.primary{background:var(--accent);color:var(--on-accent)}
+.btn.secondary{background:transparent;box-shadow:inset 0 0 0 2px var(--line)}
+.btn:disabled{opacity:.55;cursor:default}
+.link{background:none;border:0;padding:.4rem 0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;font-size:.95rem}
+.field{width:100%;padding:.8rem .9rem;border-radius:12px;border:2px solid var(--line);background:var(--surface)}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:1rem;margin-top:1rem}
+.boxhead{display:flex;justify-content:space-between;align-items:center;gap:.75rem;margin-bottom:.6rem}
+.stack{display:grid;gap:.6rem}
+.copy{display:flex;gap:.5rem}
+.copy code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;background:var(--bg);border-radius:10px;padding:.55rem .7rem;font-size:.85rem}
+.copy button{border:0;border-radius:10px;padding:.5rem .8rem;background:var(--accent);color:var(--on-accent);font-weight:700}
+ol.steps{margin:.4rem 0 0;padding-left:1.2rem;color:var(--muted)}
+ol.steps li{margin-bottom:.4rem}
+
+/* Einstellungen */
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:1rem}
+.topbar h1{font-size:1.6rem;margin:.4rem 0}
+.pl{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-top:1px solid var(--line)}
+.pl:first-child{border-top:0}
+.pl input{width:22px;height:22px;accent-color:var(--accent);flex:none}
+.pl .name{font-weight:600;overflow-wrap:anywhere}
+.pl .meta{font-size:.85rem;color:var(--muted)}
+.pl.foreign{opacity:.5}
+.pllist{max-height:16rem;overflow-y:auto;margin:0 -.25rem;padding:0 .25rem}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem;margin:.2rem 0 .7rem}
+.chip{display:inline-flex;align-items:center;border:2px solid var(--line);border-radius:999px;overflow:hidden}
+.chip button{border:0;background:none;padding:.35rem .4rem .35rem .8rem;font-weight:600}
+.chip button.x{padding:.35rem .7rem .35rem .3rem;color:var(--muted)}
+.chip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.mixsave{display:flex;gap:.5rem}
+.mixsave .field{flex:1;padding:.6rem .8rem}
+.mixsave button{border:0;border-radius:12px;padding:.6rem .9rem;background:var(--line);font-weight:700}
+.range{display:flex;align-items:center;gap:1rem}
+.range input{flex:1;accent-color:var(--accent)}
+.range output{font-family:var(--head);font-weight:700;min-width:3.5rem;text-align:right}
+.startarea{margin-top:1.2rem;display:grid;gap:.6rem}
+
+/* Spiel */
+.gamebar{display:flex;justify-content:space-between;align-items:center;gap:1rem;min-height:2.6rem;color:var(--muted);font-size:.95rem}
+.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem 0;min-height:22rem}
+.disc{--d:min(72vw,290px);position:relative;width:var(--d);height:var(--d)}
+.ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:3}
+.ring .track{stroke:var(--line)}
+.ring .prog{stroke:var(--accent);stroke-linecap:round;stroke-dasharray:289.03;stroke-dashoffset:0}
+.record{position:absolute;inset:8%;border-radius:50%;
+  background:radial-gradient(circle,var(--bg) 0 3%,var(--accent) 3.5% 30%,transparent 30.5%),
+             repeating-radial-gradient(circle,#140818 0 2px,#22102a 2px 4px);
+  box-shadow:0 14px 34px rgba(0,0,0,.35)}
+.record::after{content:"";position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 30deg,transparent 0 40deg,rgba(255,255,255,.12) 55deg,transparent 75deg 220deg,rgba(255,255,255,.07) 235deg,transparent 255deg)}
+.record.spin{animation:spin 2.2s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.count{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:2.2rem;color:var(--on-accent);pointer-events:none}
+.status{text-align:center;margin:1.1rem 0 0;font-weight:600;font-size:1.15rem;min-height:1.6rem}
+.card{width:min(84vw,320px);aspect-ratio:1/1.12;border-radius:26px;padding:1.4rem;color:var(--card-text);
+  display:flex;flex-direction:column;justify-content:center;text-align:center;box-shadow:0 14px 34px rgba(0,0,0,.3);
+  animation:flip .5s cubic-bezier(.2,.8,.3,1.15)}
+@keyframes flip{from{transform:perspective(900px) rotateY(-90deg)}to{transform:none}}
+.card .year{font-family:var(--head);font-weight:800;font-size:clamp(4rem,22vw,5.5rem);line-height:1;letter-spacing:-.04em;margin:0 0 .8rem}
+.card .title{font-weight:700;font-size:1.35rem;line-height:1.2;margin:0 0 .3rem;overflow-wrap:anywhere}
+.card .artist{font-weight:600;font-size:1.1rem;margin:0 0 .9rem;overflow-wrap:anywhere}
+.card .album{font-size:.88rem;opacity:.75;margin:0;overflow-wrap:anywhere}
+.actions{display:grid;gap:.6rem}
+
+/* Meldungen */
+.overlay{position:fixed;inset:0;background:rgba(10,3,14,.65);display:grid;place-items:end center;padding:1rem;z-index:20}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:1.3rem;width:100%;max-width:28rem;margin-bottom:env(safe-area-inset-bottom,0)}
+.toast{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
+  background:var(--text);color:var(--bg);padding:.7rem 1rem;border-radius:12px;max-width:calc(100% - 2rem);z-index:30;font-size:.95rem}
+@media (prefers-reduced-motion:reduce){.record.spin,.card{animation:none}}
+</style>
+</head>
+<body>
+<main>
+
+<!-- Einrichtung -->
+<section class="screen" id="setup" hidden>
+  <h1>P-Quiz</h1>
+  <p class="muted">Musikquiz mit deinen eigenen Spotify-Playlists.</p>
+  <div class="box stack">
+    <label for="clientId"><strong>Client-ID deiner Spotify-App</strong></label>
+    <input class="field" id="clientId" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="32 Zeichen">
+    <button class="btn primary" id="loginBtn">Mit Spotify verbinden</button>
+    <p class="muted small" id="insecure" hidden>Diese Seite läuft nicht über https. Die Anmeldung funktioniert nur auf deiner GitHub-Pages-Adresse.</p>
+  </div>
+  <div class="box">
+    <h2>Redirect-URI</h2>
+    <p class="muted small" style="margin:.4rem 0 .6rem">Diese Adresse muss in deiner Spotify-App unter Redirect URIs stehen, genau so, mit Schrägstrich am Ende.</p>
+    <div class="copy"><code id="redirectShow"></code><button id="copyRedirect" type="button">Kopieren</button></div>
+  </div>
+</section>
+
+<!-- Einstellungen -->
+<section class="screen" id="settings" hidden>
+  <div class="topbar"><h1>P-Quiz</h1><button class="link" id="logoutBtn">Abmelden</button></div>
+
+  <div class="box">
+    <div class="boxhead"><h2>Musik</h2><button class="link" id="reloadBtn">Neu laden</button></div>
+    <div class="pllist" id="plList"><p class="muted">Playlists werden geladen …</p></div>
+  </div>
+
+  <div class="box">
+    <h2 style="margin-bottom:.6rem">Mischungen</h2>
+    <div class="chips" id="mixList"></div>
+    <div class="mixsave">
+      <input class="field" id="mixName" maxlength="40" placeholder="Auswahl speichern als …" autocomplete="off">
+      <button id="mixSave" type="button">Speichern</button>
+    </div>
+  </div>
+
+  <div class="box">
+    <h2 style="margin-bottom:.4rem">Hörzeit</h2>
+    <div class="range"><input type="range" id="seconds" min="1" max="60" step="1"><output id="secondsOut"></output></div>
+  </div>
+
+  <div class="box">
+    <div class="boxhead"><h2>Abspielgerät</h2><button class="link" id="devReload">Suchen</button></div>
+    <select class="field" id="devSelect"></select>
+    <p class="muted small" style="margin:.6rem 0 0">Fehlt dein Handy oder Lautsprecher? Öffne dort Spotify, spiel kurz etwas an und tippe auf Suchen.</p>
+  </div>
+
+  <div class="startarea">
+    <p class="muted small" id="selInfo" style="margin:0;text-align:center"></p>
+    <button class="btn primary" id="startBtn">Neues Spiel starten</button>
+    <button class="btn secondary" id="resumeBtn" hidden>Weiterspielen</button>
+  </div>
+</section>
+
+<!-- Spiel -->
+<section class="screen" id="game" hidden>
+  <div class="gamebar"><button class="link" id="toSettings">Einstellungen</button><span id="deckInfo"></span></div>
+  <div class="stage">
+    <div id="back">
+      <div class="disc">
+        <svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="46"/><circle class="prog" id="prog" cx="50" cy="50" r="46"/></svg>
+        <div class="record" id="record"></div>
+        <div class="count" id="count"></div>
+      </div>
+    </div>
+    <article class="card" id="front" hidden>
+      <p class="year" id="fYear"></p>
+      <p class="title" id="fTitle"></p>
+      <p class="artist" id="fArtist"></p>
+      <p class="album" id="fAlbum"></p>
+    </article>
+    <p class="status" id="status" aria-live="polite"></p>
+  </div>
+  <div class="actions">
+    <button class="btn primary" data-when="ready" id="drawBtn">Karte ziehen</button>
+    <button class="btn primary" data-when="loading" disabled>Einen Moment …</button>
+    <button class="btn secondary" data-when="playing" id="stopBtn">Stopp</button>
+    <button class="btn primary" data-when="stopped" id="flipBtn">Karte umdrehen</button>
+    <button class="btn primary" data-when="revealed" id="nextBtn">Nächste Karte</button>
+    <button class="btn secondary" data-when="stopped revealed" id="againBtn">Nochmal hören</button>
+  </div>
+</section>
+</main>
+
+<div class="overlay" id="msg" hidden role="alertdialog" aria-modal="true" aria-labelledby="msgText">
+  <div class="sheet stack">
+    <p id="msgText" style="margin:0 0 .4rem"></p>
+    <button class="btn primary" id="msgRetry">Nochmal versuchen</button>
+    <button class="btn secondary" id="msgClose">Schließen</button>
+  </div>
+</div>
+<div class="toast" id="toast" hidden role="status"></div>
+
+<script>
+'use strict';
+const API = 'https://api.spotify.com/v1';
+const SCOPES = 'streaming user-read-email user-read-private user-read-playback-state user-modify-playback-state playlist-read-private playlist-read-collaborative';
+const SDK_NAME = 'P-Quiz (dieser Browser)';
+const $ = s => document.querySelector(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- Speicher (Präfix pq.) ---------- */
+const store = {
+  get(k, d){ try{ const v = localStorage.getItem('pq.' + k); return v === null ? d : JSON.parse(v); }catch{ return d; } },
+  set(k, v){ try{ localStorage.setItem('pq.' + k, JSON.stringify(v)); }catch{} },
+  del(k){ try{ localStorage.removeItem('pq.' + k); }catch{} }
+};
+const redirectUri = () => location.origin + location.pathname;
+
+function show(id){ document.querySelectorAll('.screen').forEach(s => s.hidden = s.id !== id); scrollTo(0, 0); }
+let toastT;
+function toast(t){ const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 4000); }
+let retryFn = null;
+function showMsg(text, retry){
+  $('#msgText').textContent = text; retryFn = retry || null;
+  $('#msgRetry').hidden = !retry; $('#msg').hidden = false;
+}
+
+/* ---------- Fehlerklassen ---------- */
+class AuthError extends Error { constructor(){ super('Bitte verbinde dich neu mit Spotify.'); } }
+class ApiError extends Error {
+  constructor(status, msg, reason){ super(msg || ('Spotify meldet Fehler ' + status)); this.status = status; this.reason = reason || ''; }
+}
+class UserError extends Error {}
+
+/* ---------- Anmeldung mit PKCE ---------- */
+function b64url(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
+const randStr = n => b64url(crypto.getRandomValues(new Uint8Array(n)));
+
+async function login(){
+  const cid = $('#clientId').value.trim();
+  if (!/^[a-f0-9]{32}$/i.test(cid)) { toast('Die Client-ID hat 32 Zeichen aus Ziffern und den Buchstaben a bis f.'); return; }
+  store.set('clientId', cid);
+  const verifier = randStr(48), state = randStr(12);
+  const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
+  store.set('verifier', verifier); store.set('authState', state);
+  location.href = 'https://accounts.spotify.com/authorize?' + new URLSearchParams({
+    response_type:'code', client_id:cid, scope:SCOPES, state,
+    code_challenge_method:'S256', code_challenge:challenge, redirect_uri:redirectUri()
+  });
+}
+async function tokenRequest(params){
+  const r = await fetch('https://accounts.spotify.com/api/token', {
+    method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, body:new URLSearchParams(params)
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error_description || j.error || 'Die Anmeldung bei Spotify ist fehlgeschlagen.');
+  const old = store.get('token', {}) || {};
+  const t = { access:j.access_token, refresh:j.refresh_token || old.refresh, exp:Date.now() + (j.expires_in - 60) * 1000 };
+  store.set('token', t);
+  return t;
+}
+async function handleRedirect(){
+  const q = new URLSearchParams(location.search);
+  if (!q.has('code') && !q.has('error')) return;
+  history.replaceState(null, '', redirectUri());
+  if (q.get('error')) { toast('Anmeldung abgebrochen.'); return; }
+  if (q.get('state') !== store.get('authState')) { toast('Die Anmeldung passt nicht zu dieser Seite. Bitte nochmal verbinden.'); return; }
+  await tokenRequest({ grant_type:'authorization_code', code:q.get('code'), redirect_uri:redirectUri(),
+                       client_id:store.get('clientId'), code_verifier:store.get('verifier') });
+  store.del('verifier'); store.del('authState');
+}
+let refreshing = null;
+async function getToken(force){
+  let t = store.get('token', null);
+  if (!t) throw new AuthError();
+  if (force || Date.now() > t.exp) {
+    if (!t.refresh) throw new AuthError();
+    refreshing = refreshing || tokenRequest({ grant_type:'refresh_token', refresh_token:t.refresh, client_id:store.get('clientId') })
+      .finally(() => { refreshing = null; });
+    try { t = await refreshing; } catch { store.del('token'); throw new AuthError(); }
+  }
+  return t.access;
+}
+async function api(path, opts = {}, attempt = 0){
+  const token = await getToken();
+  const headers = { Authorization:'Bearer ' + token };
+  if (opts.body) headers['Content-Type'] = 'application/json';
+  const r = await fetch(path.startsWith('http') ? path : API + path, { ...opts, headers });
+  if (r.status === 401 && attempt === 0) { await getToken(true); return api(path, opts, 1); }
+  if (r.status === 429 && attempt < 3) {
+    const wait = Math.min(10, Number(r.headers.get('Retry-After')) || 2);
+    await sleep(wait * 1000);
+    return api(path, opts, attempt + 1);
+  }
+  if (r.status === 204 || r.status === 202) return null;
+  const text = await r.text();
+  let j = null; try { j = text ? JSON.parse(text) : null; } catch {}
+  if (!r.ok) throw new ApiError(r.status, j && j.error && j.error.message, j && j.error && j.error.reason);
+  return j;
+}
+
+/* ---------- Web Playback SDK ("Dieser Browser") ---------- */
+let sdkPlayer = null, sdkDeviceId = null;
+window.onSpotifyWebPlaybackSDKReady = () => {
+  if (!store.get('token', null)) return;
+  sdkPlayer = new Spotify.Player({ name:SDK_NAME, volume:0.8,
+    getOAuthToken: cb => getToken().then(cb).catch(() => {}) });
+  sdkPlayer.addListener('ready', ({ device_id }) => { sdkDeviceId = device_id; if (!$('#settings').hidden) loadDevices(); });
+  sdkPlayer.addListener('not_ready', () => { sdkDeviceId = null; });
+  sdkPlayer.connect();
+};
+function loadSdk(){
+  if (document.getElementById('sdk')) return;
+  const s = document.createElement('script'); s.id = 'sdk'; s.src = 'https://sdk.scdn.co/spotify-player.js'; s.async = true;
+  document.head.appendChild(s);
+}
+
+/* ---------- Einstellungen ---------- */
+let me = null, playlists = [];
+const ownsPl = p => p.collaborative || (p.owner && me && p.owner.id === me.id);
+const plTotal = p => (p.items && p.items.total) ?? (p.tracks && p.tracks.total) ?? 0;
+
+async function loadPlaylists(){
+  $('#plList').innerHTML = '<p class="muted">Playlists werden geladen …</p>';
+  try {
+    me = await api('/me');
+    const all = []; let next = '/me/playlists?limit=50';
+    while (next) { const page = await api(next); all.push(...((page && page.items) || []).filter(Boolean)); next = page && page.next; }
+    playlists = all;
+    renderPlaylists(); renderMixes(); renderSelInfo();
+  } catch (e) { handleError(e, loadPlaylists); $('#plList').innerHTML = '<p class="muted">Playlists konnten nicht geladen werden.</p>'; }
+}
+function selected(){ return new Set(store.get('selected', [])); }
+function setSelected(set){ store.set('selected', [...set]); renderPlaylists(); renderMixes(); renderSelInfo(); }
+function renderPlaylists(){
+  const box = $('#plList'), sel = selected();
+  box.innerHTML = '';
+  if (!playlists.length) { box.innerHTML = '<p class="muted">Du hast noch keine Playlists.</p>'; return; }
+  const sorted = [...playlists].sort((a, b) => (ownsPl(b) - ownsPl(a)) || a.name.localeCompare(b.name, 'de'));
+  for (const p of sorted) {
+    const own = ownsPl(p);
+    const row = document.createElement('label'); row.className = 'pl' + (own ? '' : ' foreign');
+    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.disabled = !own; cb.checked = own && sel.has(p.id);
+    cb.onchange = () => { const s = selected(); cb.checked ? s.add(p.id) : s.delete(p.id); setSelected(s); };
+    const txt = document.createElement('div');
+    const nm = document.createElement('div'); nm.className = 'name'; nm.textContent = p.name;
+    const mt = document.createElement('div'); mt.className = 'meta';
+    mt.textContent = own ? plTotal(p) + ' Songs' : 'Gehört dir nicht. In eine eigene Playlist kopieren, dann ist sie wählbar.';
+    txt.append(nm, mt); row.append(cb, txt); box.append(row);
+  }
+}
+function validSelection(){
+  const ids = new Set(playlists.filter(ownsPl).map(p => p.id));
+  return [...selected()].filter(id => ids.has(id));
+}
+function renderSelInfo(){
+  const ids = validSelection();
+  const n = playlists.filter(p => ids.includes(p.id)).reduce((s, p) => s + plTotal(p), 0);
+  $('#selInfo').textContent = ids.length ? ids.length + (ids.length === 1 ? ' Playlist' : ' Playlists') + ' mit zusammen ' + n + ' Songs gewählt' : 'Wähle mindestens eine Playlist.';
+  $('#startBtn').disabled = !ids.length;
+}
+function renderMixes(){
+  const box = $('#mixList'), mixes = store.get('mixes', []);
+  box.innerHTML = '';
+  if (!mixes.length) { box.innerHTML = '<p class="muted small" style="margin:0">Noch keine Mischung gespeichert.</p>'; return; }
+  const cur = [...selected()].sort().join(',');
+  for (const m of mixes) {
+    const chip = document.createElement('span'); chip.className = 'chip' + ([...m.ids].sort().join(',') === cur ? ' on' : '');
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = m.name;
+    b.onclick = () => setSelected(new Set(m.ids));
+    const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×';
+    x.setAttribute('aria-label', 'Mischung ' + m.name + ' löschen');
+    x.onclick = () => { store.set('mixes', store.get('mixes', []).filter(o => o.name !== m.name)); renderMixes(); };
+    chip.append(b, x); box.append(chip);
+  }
+}
+function saveMix(){
+  const name = $('#mixName').value.trim().slice(0, 40);
+  const ids = validSelection();
+  if (!name) { toast('Gib der Mischung einen Namen.'); return; }
+  if (!ids.length) { toast('Wähle zuerst Playlists aus.'); return; }
+  const mixes = store.get('mixes', []).filter(m => m.name.toLowerCase() !== name.toLowerCase());
+  mixes.push({ name, ids }); mixes.sort((a, b) => a.name.localeCompare(b.name, 'de'));
+  store.set('mixes', mixes); $('#mixName').value = ''; renderMixes(); toast('Mischung „' + name + '“ gespeichert.');
+}
+
+async function getDevices(){
+  const d = await api('/me/player/devices');
+  return ((d && d.devices) || []).filter(x => !x.is_restricted && x.id);
+}
+const devLabel = d => (d.id === sdkDeviceId || d.name === SDK_NAME) ? 'Dieser Browser' : d.name + (d.type ? ' (' + d.type + ')' : '');
+async function loadDevices(){
+  const sel = $('#devSelect');
+  try {
+    const list = await getDevices();
+    if (sdkDeviceId && !list.some(d => d.id === sdkDeviceId)) list.push({ id:sdkDeviceId, name:SDK_NAME });
+    const want = store.get('device', null);
+    sel.innerHTML = '';
+    if (want && !list.some(d => d.id === want.id)) list.unshift({ id:want.id, name:want.name, missing:true });
+    if (!list.length) { sel.innerHTML = '<option value="">Kein Gerät gefunden</option>'; return; }
+    for (const d of list) {
+      const o = document.createElement('option'); o.value = d.id;
+      o.textContent = d.missing ? d.name + ' (gerade nicht erreichbar)' : devLabel(d);
+      sel.append(o);
+    }
+    const pick = (want && want.id) || (list.find(d => d.is_active) || list[0]).id;
+    sel.value = pick;
+    const chosen = list.find(d => d.id === pick);
+    store.set('device', { id:pick, name:chosen.missing ? chosen.name : devLabel(chosen) });
+  } catch (e) { handleError(e, loadDevices); }
+}
+
+/* ---------- Stapel ---------- */
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+const cleanTitle = s => String(s || '').replace(/\s[-–]\s.*$/, '').replace(/[(\[].*?[)\]]/g, '');
+function shuffle(a){
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function toCard(t){
+  const al = t.album || {};
+  return { uri:t.uri, title:t.name, artist:(t.artists || []).map(a => a.name).join(', '),
+           album:al.name || '', year:(al.release_date || '').slice(0, 4) || '?', duration:t.duration_ms || 0 };
+}
+async function buildDeck(ids){
+  const keys = new Set(), cards = [];
+  for (let i = 0; i < ids.length; i++) {
+    const p = playlists.find(x => x.id === ids[i]);
+    $('#status').textContent = 'Lade ' + (p ? '„' + p.name + '“' : 'Playlist') + ' (' + (i + 1) + ' von ' + ids.length + ') …';
+    let next = '/playlists/' + ids[i] + '/items?limit=50&market=from_token';
+    try {
+      while (next) {
+        const page = await api(next);
+        for (const e of (page && page.items) || []) {
+          const t = e && (e.item || e.track);
+          if (!t || t.type !== 'track' || t.is_local || !t.uri || t.is_playable === false) continue;
+          const key = norm(cleanTitle(t.name)) + '|' + norm(t.artists && t.artists[0] && t.artists[0].name);
+          if (keys.has(key)) continue;
+          keys.add(key); cards.push(toCard(t));
+        }
+        next = page && page.next;
+      }
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 403 || e.status === 404)) { toast('„' + (p ? p.name : 'Eine Playlist') + '“ wurde übersprungen, Spotify gibt ihre Songs nicht heraus.'); continue; }
+      throw e;
+    }
+  }
+  return shuffle(cards);
+}
+let deck = null;
+const saveDeck = () => store.set('deck', deck);
+function takeCard(){
+  if (!deck || !deck.cards.length) return null;
+  if (deck.pos >= deck.cards.length) { shuffle(deck.cards); deck.pos = 0; toast('Alle Karten waren dran. Der Stapel ist neu gemischt.'); }
+  const c = deck.cards[deck.pos++]; saveDeck(); return c;
+}
+function removeCard(c){
+  const i = deck.cards.findIndex(x => x.uri === c.uri);
+  if (i < 0) return;
+  deck.cards.splice(i, 1);
+  if (i < deck.pos) deck.pos--;
+  saveDeck();
+}
+function updateDeckInfo(){
+  $('#deckInfo').textContent = deck ? 'Karte ' + Math.min(deck.pos, deck.cards.length) + ' von ' + deck.cards.length : '';
+}
+
+/* ---------- Spiel ---------- */
+const game = { phase:'ready', card:null, revealed:false, run:0, timer:null, device:null };
+const seconds = () => Math.min(60, Math.max(1, Number(store.get('seconds', 20)) || 20));
+const RING = 2 * Math.PI * 46;
+
+function setPhase(p){
+  game.phase = p;
+  document.querySelectorAll('[data-when]').forEach(b => b.hidden = !b.dataset.when.split(' ').includes(p));
+  $('#record').classList.toggle('spin', p === 'playing');
+  $('#front').hidden = !game.revealed; $('#back').hidden = game.revealed;
+  const st = { ready:'Zieh eine Karte.', loading:'Song wird gestartet …', playing:game.revealed ? 'Läuft nochmal' : 'Hör genau hin',
+               stopped:'Zeit um. Aus welchem Jahr ist der Song?', revealed:'' };
+  if (p !== 'loading' || !$('#status').textContent.startsWith('Lade')) $('#status').textContent = st[p];
+  if (p !== 'playing') { $('#count').textContent = p === 'stopped' ? '0' : ''; }
+  if (p === 'ready') setRing(0);
+  updateDeckInfo();
+}
+function setRing(frac){ $('#prog').style.strokeDashoffset = String(RING * frac); }
+
+function startPos(dur, secs){
+  const L = secs * 1000 + 500;
+  let lo = 0.15 * dur, hi = Math.min(0.70 * dur, dur - L);
+  if (hi < lo) { lo = hi = Math.max(0, Math.min(0.15 * dur, dur - L)); }
+  return Math.round(lo + Math.random() * (hi - lo));
+}
+async function resolveDevice(){
+  const want = store.get('device', null);
+  const list = await getDevices();
+  if (sdkDeviceId && !list.some(d => d.id === sdkDeviceId)) list.push({ id:sdkDeviceId, name:SDK_NAME });
+  const d = (want && list.find(x => x.id === want.id)) || (!want && (list.find(x => x.is_active) || (list.length === 1 && list[0])));
+  if (!d) throw new UserError(want
+    ? 'Das Abspielgerät „' + want.name + '“ ist gerade nicht erreichbar. Öffne dort Spotify, spiel kurz etwas an und versuch es nochmal, oder wähle in den Einstellungen ein anderes Gerät.'
+    : 'Kein Abspielgerät gewählt. Öffne Spotify auf dem Handy oder Lautsprecher und wähle es in den Einstellungen aus.');
+  return d.id;
+}
+const isSkippable = e => e instanceof ApiError && (e.status === 400 || (e.status === 403 && e.reason !== 'PREMIUM_REQUIRED'));
+class SkipError extends Error {}
+
+async function playSnippet(card){
+  const run = ++game.run;
+  stopTimer();
+  game.device = await resolveDevice();
+  try {
+    await api('/me/player/play?device_id=' + encodeURIComponent(game.device), { method:'PUT',
+      body:JSON.stringify({ uris:[card.uri], position_ms:card.start }) });
+  } catch (e) { if (isSkippable(e)) throw new SkipError(); throw e; }
+  if (run !== game.run) return;
+  setPhase('playing');
+  startTimer(run);
+  await sleep(3000);
+  if (run !== game.run) return;
+  let st = null;
+  try { st = await api('/me/player'); } catch (e) { if (e instanceof AuthError) throw e; return; }
+  if (run !== game.run) return;
+  const same = st && st.item && (st.item.uri === card.uri || st.item.name === card.title);
+  if (!same || (game.timer && !st.is_playing)) {
+    game.run++; stopTimer();
+    try { await api('/me/player/pause', { method:'PUT' }); } catch {}
+    throw new SkipError();
+  }
+}
+function startTimer(run){
+  const total = seconds() * 1000, t0 = Date.now();
+  const tick = () => {
+    if (run !== game.run) return stopTimer();
+    const el = Date.now() - t0;
+    setRing(Math.min(1, el / total));
+    $('#count').textContent = String(Math.max(0, Math.ceil((total - el) / 1000)));
+    if (el >= total) endSnippet(run);
+  };
+  tick(); game.timer = setInterval(tick, 100);
+}
+function stopTimer(){ clearInterval(game.timer); game.timer = null; }
+async function endSnippet(run){
+  if (run !== game.run) return;
+  game.run++; stopTimer();
+  setPhase(game.revealed ? 'revealed' : 'stopped');
+  try { await api('/me/player/pause', { method:'PUT' }); } catch {}
+}
+async function stopNow(){
+  game.run++; stopTimer();
+  setPhase(game.revealed ? 'revealed' : 'stopped');
+  try { await api('/me/player/pause', { method:'PUT' }); } catch (e) { if (e instanceof AuthError) handleError(e); }
+}
+
+async function drawCard(){
+  game.revealed = false; game.card = null; setPhase('loading');
+  for (let tries = 0; tries < 4; tries++) {
+    const c = takeCard();
+    if (!c) { setPhase('ready'); showMsg('Im Stapel ist kein abspielbarer Song mehr. Starte in den Einstellungen ein neues Spiel.'); return; }
+    c.start = startPos(c.duration, seconds());
+    game.card = c; setRing(0); updateDeckInfo();
+    try { await playSnippet(c); return; }
+    catch (e) {
+      if (e instanceof SkipError) { removeCard(c); setPhase('loading'); continue; }
+      setPhase('ready'); handleError(e, drawCard); return;
+    }
+  }
+  setPhase('ready');
+  showMsg('Vier Songs hintereinander ließen sich nicht abspielen. Prüfe, ob Spotify auf dem Abspielgerät läuft.', drawCard);
+}
+async function playAgain(){
+  if (!game.card) return;
+  const back = game.revealed ? 'revealed' : 'stopped';
+  setPhase('loading'); setRing(0);
+  try { await playSnippet(game.card); }
+  catch (e) {
+    setPhase(back);
+    if (e instanceof SkipError) showMsg('Spotify spielt diesen Song gerade nicht ab. Zieh einfach die nächste Karte.');
+    else handleError(e, playAgain);
+  }
+}
+function reveal(){
+  const c = game.card; if (!c) return;
+  game.revealed = true;
+  const y = parseInt(c.year, 10);
+  const hue = isNaN(y) ? 300 : Math.min(315, Math.max(25, 25 + (y - 1950) / 76 * 290));
+  const f = $('#front'); f.style.background = 'hsl(' + hue.toFixed(0) + ' 85% 70%)';
+  $('#fYear').textContent = c.year; $('#fTitle').textContent = c.title;
+  $('#fArtist').textContent = c.artist; $('#fAlbum').textContent = c.album ? 'Album: ' + c.album : '';
+  f.style.animation = 'none'; void f.offsetWidth; f.style.animation = '';
+  setPhase('revealed');
+}
+
+/* ---------- Bildschirm wach halten ---------- */
+let wakeLock = null;
+async function keepAwake(){
+  try { if ('wakeLock' in navigator && !$('#game').hidden && document.visibilityState === 'visible') wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+}
+function releaseAwake(){ try { wakeLock && wakeLock.release(); } catch {} wakeLock = null; }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+
+/* ---------- Spielstart ---------- */
+async function startGame(){
+  const ids = validSelection();
+  if (!ids.length) { toast('Wähle mindestens eine Playlist.'); return; }
+  if (sdkPlayer && sdkPlayer.activateElement) { try { sdkPlayer.activateElement(); } catch {} }
+  show('game'); game.revealed = false; game.card = null; deck = null; setPhase('loading'); keepAwake();
+  try {
+    const cards = await buildDeck(ids);
+    if (!cards.length) throw new UserError('In den gewählten Playlists gibt es keine abspielbaren Songs.');
+    deck = { ids, cards, pos:0 }; saveDeck();
+    setPhase('ready');
+    toast(cards.length + ' Songs im Stapel.');
+  } catch (e) { show('settings'); releaseAwake(); handleError(e, startGame); }
+}
+function resumeGame(){
+  deck = store.get('deck', null);
+  if (!deck || !deck.cards || !deck.cards.length) { toast('Kein gespeichertes Spiel gefunden.'); return; }
+  if (sdkPlayer && sdkPlayer.activateElement) { try { sdkPlayer.activateElement(); } catch {} }
+  show('game'); game.revealed = false; game.card = null; setPhase('ready'); keepAwake();
+}
+async function toSettings(){
+  if (game.phase === 'playing') await stopNow();
+  releaseAwake(); openSettings();
+}
+function openSettings(){
+  show('settings');
+  const d = store.get('deck', null);
+  $('#resumeBtn').hidden = !(d && d.cards && d.cards.length);
+  if (!$('#resumeBtn').hidden) $('#resumeBtn').textContent = 'Weiterspielen (Karte ' + Math.min(d.pos, d.cards.length) + ' von ' + d.cards.length + ')';
+  if (!playlists.length) loadPlaylists(); else { renderPlaylists(); renderMixes(); renderSelInfo(); }
+  loadDevices();
+}
+
+/* ---------- Fehlerbehandlung ---------- */
+function handleError(e, retry){
+  if (e instanceof AuthError) { store.del('token'); render(); toast(e.message); return; }
+  let text = e.message;
+  if (e instanceof ApiError) {
+    if (e.reason === 'PREMIUM_REQUIRED') text = 'Spotify verlangt für die Wiedergabe ein Premium-Konto.';
+    else if (e.status === 404) text = 'Spotify findet das Abspielgerät nicht. Öffne dort Spotify, spiel kurz etwas an und versuch es nochmal.';
+    else if (e.status === 403) text = 'Spotify lässt diese Aktion nicht zu. Prüfe, ob dein Konto in der Spotify-App unter User Management eingetragen ist.';
+    else if (e.status === 429) text = 'Spotify bremst gerade zu viele Anfragen. Warte eine Minute und versuch es dann nochmal.';
+    else if (e.status >= 500) text = 'Spotify antwortet gerade nicht. Versuch es gleich nochmal.';
+  } else if (e instanceof TypeError) {
+    text = 'Keine Verbindung zu Spotify. Prüfe das Internet und versuch es nochmal.';
+  }
+  showMsg(text, retry);
+}
+
+/* ---------- Start ---------- */
+function render(){
+  if (!store.get('clientId', '') || !store.get('token', null)) {
+    $('#clientId').value = store.get('clientId', '');
+    show('setup');
+  } else { loadSdk(); openSettings(); }
+}
+function wire(){
+  $('#redirectShow').textContent = redirectUri();
+  $('#insecure').hidden = window.isSecureContext;
+  $('#copyRedirect').onclick = async () => { try { await navigator.clipboard.writeText(redirectUri()); toast('Adresse kopiert.'); } catch { toast('Bitte die Adresse von Hand kopieren.'); } };
+  $('#loginBtn').onclick = login;
+  $('#logoutBtn').onclick = () => { store.del('token'); render(); };
+  $('#reloadBtn').onclick = loadPlaylists;
+  $('#mixSave').onclick = saveMix;
+  $('#mixName').onkeydown = e => { if (e.key === 'Enter') saveMix(); };
+  const s = $('#seconds'); s.value = seconds(); $('#secondsOut').textContent = seconds() + ' s';
+  s.oninput = () => { store.set('seconds', Number(s.value)); $('#secondsOut').textContent = s.value + ' s'; };
+  $('#devReload').onclick = loadDevices;
+  $('#devSelect').onchange = e => { const o = e.target.selectedOptions[0]; if (o && o.value) store.set('device', { id:o.value, name:o.textContent.replace(/ \(gerade nicht erreichbar\)$/, '') }); };
+  $('#startBtn').onclick = startGame;
+  $('#resumeBtn').onclick = resumeGame;
+  $('#toSettings').onclick = toSettings;
+  $('#drawBtn').onclick = drawCard;
+  $('#nextBtn').onclick = drawCard;
+  $('#stopBtn').onclick = stopNow;
+  $('#flipBtn').onclick = reveal;
+  $('#againBtn').onclick = playAgain;
+  $('#msgRetry').onclick = () => { $('#msg').hidden = true; if (retryFn) retryFn(); };
+  $('#msgClose').onclick = () => { $('#msg').hidden = true; };
+}
+(async () => {
+  wire();
+  try { await handleRedirect(); } catch (e) { toast(e.message); }
+  render();
+})();
+</script>
+</body>
+</html>
