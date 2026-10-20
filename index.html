@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js" defer></script>
 <style>
 :root{
   --bg:#1E0C27;--surface:#2C1538;--text:#F8EEFB;--muted:#BBA3C4;--line:#4A2B58;
@@ -100,6 +101,23 @@ ol.steps li{margin-bottom:.4rem}
 .card .album{font-size:.88rem;opacity:.75;margin:0;overflow-wrap:anywhere}
 .actions{display:grid;gap:.6rem}
 
+/* Spielraum */
+.qr{background:#fff;border-radius:22px;padding:14px;width:min(70vw,250px);margin:.5rem auto 0}
+.qr svg{display:block;width:100%;height:auto}
+.roomcode{text-align:center;margin:1rem 0 .2rem}
+.roomcode .label{color:var(--muted);font-size:.9rem}
+.roomcode .code{font-family:var(--head);font-weight:800;font-size:2.6rem;letter-spacing:.14em;line-height:1.1}
+.people{display:flex;flex-wrap:wrap;gap:.5rem}
+.person{display:inline-flex;align-items:center;gap:.45rem;border:2px solid var(--line);border-radius:999px;padding:.3rem .8rem;font-weight:600}
+.person::before{content:"";width:9px;height:9px;border-radius:50%;background:#4ED18A}
+.person.off{opacity:.55}
+.person.off::before{background:var(--muted)}
+.person.me{border-color:var(--accent)}
+.roomlink{background:none;border:0;padding:.4rem 0;color:var(--muted);font-size:.95rem;text-decoration:underline;text-underline-offset:3px}
+.err{color:#FF8A8A;font-size:.92rem;margin:.2rem 0 0;min-height:1.2rem}
+.codefield{font-family:var(--head);font-weight:700;letter-spacing:.15em;text-transform:uppercase}
+.wait{text-align:center;color:var(--muted);max-width:22rem;margin:0 auto}
+
 /* Meldungen */
 .overlay{position:fixed;inset:0;background:rgba(10,3,14,.65);display:grid;place-items:end center;padding:1rem;z-index:20}
 .sheet{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:1.3rem;width:100%;max-width:28rem;margin-bottom:env(safe-area-inset-bottom,0)}
@@ -119,6 +137,7 @@ ol.steps li{margin-bottom:.4rem}
     <label for="clientId"><strong>Client-ID deiner Spotify-App</strong></label>
     <input class="field" id="clientId" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="32 Zeichen">
     <button class="btn primary" id="loginBtn">Mit Spotify verbinden</button>
+    <button class="link" id="playOnly" style="justify-self:center">Ich will nur mitspielen</button>
     <p class="muted small" id="insecure" hidden>Diese Seite läuft nicht über https. Die Anmeldung funktioniert nur auf deiner GitHub-Pages-Adresse.</p>
   </div>
   <div class="box">
@@ -159,14 +178,72 @@ ol.steps li{margin-bottom:.4rem}
 
   <div class="startarea">
     <p class="muted small" id="selInfo" style="margin:0;text-align:center"></p>
-    <button class="btn primary" id="startBtn">Neues Spiel starten</button>
+    <button class="btn primary" id="roomBtn">Spielraum öffnen</button>
     <button class="btn secondary" id="resumeBtn" hidden>Weiterspielen</button>
+    <button class="link" id="startBtn" style="justify-self:center">Ohne Mitspieler spielen</button>
   </div>
+</section>
+
+<!-- Spielraum (Haupthandy) -->
+<section class="screen" id="lobby" hidden>
+  <div class="topbar"><h1>Spielraum</h1><button class="link" id="lobbySettings">Einstellungen</button></div>
+  <p class="muted" style="margin:0">Scannt den Code mit der Handykamera oder öffnet P-Quiz und gebt den Raumcode ein.</p>
+  <div class="qr" id="qrBox"></div>
+  <div class="roomcode"><div class="label">Raumcode</div><div class="code" id="roomCode">····</div></div>
+  <div class="box">
+    <h2 style="margin-bottom:.7rem" id="peopleHead">Noch niemand da</h2>
+    <div class="people" id="peopleList"></div>
+  </div>
+  <div class="startarea">
+    <p class="muted small" id="lobbyInfo" style="margin:0;text-align:center"></p>
+    <button class="btn primary" id="lobbyStart">Spiel starten</button>
+    <button class="link" id="closeRoom" style="justify-self:center">Spielraum schließen</button>
+  </div>
+</section>
+
+<!-- Beitreten (Spielerhandy) -->
+<section class="screen" id="pjoin" hidden>
+  <h1>P-Quiz</h1>
+  <p class="muted">Tritt dem Spiel bei. Den Raumcode zeigt das Haupthandy.</p>
+  <div class="box stack">
+    <label for="joinCode"><strong>Raumcode</strong></label>
+    <input class="field codefield" id="joinCode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7QX">
+    <label for="joinName"><strong>Dein Name</strong></label>
+    <input class="field" id="joinName" maxlength="20" autocomplete="nickname" placeholder="Lena">
+    <p class="err" id="joinErr" aria-live="polite"></p>
+    <button class="btn primary" id="joinBtn">Beitreten</button>
+  </div>
+  <p class="muted small" style="margin-top:1rem">Du brauchst kein Spotify. Die Musik kommt vom Haupthandy.</p>
+  <button class="link" id="toHost" style="margin-top:auto;justify-self:start">Ich bin das Haupthandy</button>
+</section>
+
+<!-- Spiel (Spielerhandy) -->
+<section class="screen" id="pplay" hidden>
+  <div class="gamebar"><span id="pRoomInfo"></span><button class="link" id="leaveBtn">Verlassen</button></div>
+  <div class="stage">
+    <div id="pWait" class="wait"></div>
+    <div id="pBack">
+      <div class="disc">
+        <svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="46"/><circle class="prog" id="pProg" cx="50" cy="50" r="46"/></svg>
+        <div class="record" id="pRecord"></div>
+        <div class="count" id="pCount"></div>
+      </div>
+    </div>
+    <article class="card" id="pFront" hidden>
+      <p class="year" id="pYear"></p>
+      <p class="title" id="pTitle"></p>
+      <p class="artist" id="pArtist"></p>
+      <p class="album" id="pAlbum"></p>
+    </article>
+    <p class="status" id="pStatus" aria-live="polite"></p>
+  </div>
+  <div class="people" id="pPeople"></div>
+  <button class="btn primary" id="rejoinBtn" hidden style="margin-top:1rem">Neu beitreten</button>
 </section>
 
 <!-- Spiel -->
 <section class="screen" id="game" hidden>
-  <div class="gamebar"><button class="link" id="toSettings">Einstellungen</button><span id="deckInfo"></span></div>
+  <div class="gamebar"><button class="link" id="toSettings">Einstellungen</button><button class="roomlink" id="toLobby" hidden></button><span id="deckInfo"></span></div>
   <div class="stage">
     <div id="back">
       <div class="disc">
@@ -210,6 +287,61 @@ const SCOPES = 'streaming user-read-email user-read-private user-read-playback-s
 const SDK_NAME = 'P-Quiz (dieser Browser)';
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* ---------- Firebase (Verbindung zwischen den Handys) ---------- */
+const FIREBASE_CONFIG = {
+  apiKey: 'AIzaSyAJHtqb_KdxoSl1x2bry106rGD1vg0V7i8',
+  authDomain: 'p-quiz-3569d.firebaseapp.com',
+  databaseURL: 'https://p-quiz-3569d-default-rtdb.europe-west1.firebasedatabase.app',
+  projectId: 'p-quiz-3569d',
+  storageBucket: 'p-quiz-3569d.firebasestorage.app',
+  messagingSenderId: '1095371246512',
+  appId: '1:1095371246512:web:afad1826fb1ad83a8aa475'
+};
+const FB_SDK = 'https://www.gstatic.com/firebasejs/12.12.0/';
+function makeFirebase(){
+  let D = null, db = null, offset = 0, starting = null;
+  const r = p => D.ref(db, p);
+  const api = {
+    uid:null,
+    start(){
+      if (api.uid) return Promise.resolve(api.uid);
+      starting = starting || (async () => {
+        const [A, Au, Db] = await Promise.all([import(FB_SDK + 'firebase-app.js'), import(FB_SDK + 'firebase-auth.js'), import(FB_SDK + 'firebase-database.js')]);
+        const app = A.initializeApp(FIREBASE_CONFIG);
+        D = Db; db = D.getDatabase(app);
+        const cred = await Au.signInAnonymously(Au.getAuth(app));
+        api.uid = cred.user.uid;
+        D.onValue(r('.info/serverTimeOffset'), s => { offset = s.val() || 0; });
+        return api.uid;
+      })().catch(e => { starting = null; throw e; });
+      return starting;
+    },
+    now:() => Date.now() + offset,
+    stamp:() => D.serverTimestamp(),
+    async get(p){ return (await D.get(r(p))).val(); },
+    set:(p, v) => D.set(r(p), v),
+    update:(p, v) => D.update(r(p), v),
+    remove:p => D.remove(r(p)),
+    on(p, cb, err){ return D.onValue(r(p), s => cb(s.val()), e => err && err(e)); },
+    presence(p, on, off){
+      return D.onValue(r('.info/connected'), s => {
+        if (s.val() === true) D.onDisconnect(r(p)).update(off).then(() => D.update(r(p), on)).catch(() => {});
+      });
+    },
+    cancelPresence(p){ try { D.onDisconnect(r(p)).cancel(); } catch {} }
+  };
+  return api;
+}
+const FB = window.PQ_FB || makeFirebase();
+const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const newCode = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), b => CODE_CHARS[b % CODE_CHARS.length]).join('');
+const cleanCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+const joinUrl = code => location.origin + location.pathname + '?join=' + code;
+function fbFail(e){
+  console.error(e);
+  return 'Keine Verbindung zum Spielraum. Prüfe das Internet und versuch es nochmal.';
+}
 
 /* ---------- Speicher (Präfix pq.) ---------- */
 const store = {
@@ -487,6 +619,7 @@ function setPhase(p){
   if (p !== 'playing') { $('#count').textContent = p === 'stopped' ? '0' : ''; }
   if (p === 'ready') setRing(0);
   updateDeckInfo();
+  if (p !== 'playing') pushState();
 }
 function setRing(frac){ $('#prog').style.strokeDashoffset = String(RING * frac); }
 
@@ -534,6 +667,8 @@ async function playSnippet(card){
 }
 function startTimer(run){
   const total = seconds() * 1000, t0 = Date.now();
+  game.secs = seconds(); game.endsAt = room.code ? FB.now() + total : 0;
+  pushState();
   const tick = () => {
     if (run !== game.run) return stopTimer();
     const el = Date.now() - t0;
@@ -583,22 +718,224 @@ async function playAgain(){
     else handleError(e, playAgain);
   }
 }
+function paintCard(who, c){
+  const id = who === 'p' ? { f:'#pFront', y:'#pYear', t:'#pTitle', a:'#pArtist', al:'#pAlbum' }
+                         : { f:'#front', y:'#fYear', t:'#fTitle', a:'#fArtist', al:'#fAlbum' };
+  const f = $(id.f), key = c.year + '|' + c.title;
+  const y = parseInt(c.year, 10);
+  const hue = isNaN(y) ? 300 : Math.min(315, Math.max(25, 25 + (y - 1950) / 76 * 290));
+  f.style.background = 'hsl(' + hue.toFixed(0) + ' 85% 70%)';
+  $(id.y).textContent = c.year; $(id.t).textContent = c.title;
+  $(id.a).textContent = c.artist; $(id.al).textContent = c.album ? 'Album: ' + c.album : '';
+  if (f.dataset.key !== key) { f.dataset.key = key; f.style.animation = 'none'; void f.offsetWidth; f.style.animation = ''; }
+}
 function reveal(){
   const c = game.card; if (!c) return;
   game.revealed = true;
-  const y = parseInt(c.year, 10);
-  const hue = isNaN(y) ? 300 : Math.min(315, Math.max(25, 25 + (y - 1950) / 76 * 290));
-  const f = $('#front'); f.style.background = 'hsl(' + hue.toFixed(0) + ' 85% 70%)';
-  $('#fYear').textContent = c.year; $('#fTitle').textContent = c.title;
-  $('#fArtist').textContent = c.artist; $('#fAlbum').textContent = c.album ? 'Album: ' + c.album : '';
-  f.style.animation = 'none'; void f.offsetWidth; f.style.animation = '';
+  paintCard('h', c);
   setPhase('revealed');
+}
+
+/* ---------- Spielraum am Haupthandy ---------- */
+const room = { code:null, players:{}, unsub:null };
+
+function pushState(){
+  if (!room.code || !FB.uid) return;
+  const c = game.card;
+  const st = { phase:game.phase, n:deck ? Math.min(deck.pos, deck.cards.length) : 0, total:deck ? deck.cards.length : 0,
+               revealed:!!game.revealed, secs:game.secs || seconds(), endsAt:game.phase === 'playing' ? (game.endsAt || 0) : 0,
+               card:game.revealed && c ? { title:c.title, artist:c.artist, year:c.year, album:c.album } : null };
+  FB.set('rooms/' + room.code + '/state', st).catch(() => {});
+}
+async function ensureRoom(){
+  if (room.code) return room.code;
+  await FB.start();
+  let code = store.get('room', null);
+  if (code && await FB.get('rooms/' + code + '/host') !== FB.uid) code = null;
+  for (let i = 0; !code && i < 6; i++) {
+    const c = newCode();
+    if (await FB.get('rooms/' + c + '/host') === null) {
+      await FB.set('rooms/' + c, { host:FB.uid, created:FB.stamp(), state:{ phase:'lobby' } });
+      code = c;
+    }
+  }
+  if (!code) throw new Error('kein freier Raumcode');
+  room.code = code; store.set('room', code);
+  if (room.unsub) room.unsub();
+  room.unsub = FB.on('rooms/' + code + '/players', v => { room.players = v || {}; tidyPlayers(); drawLobby(); });
+  if (running()) pushState(); else FB.set('rooms/' + code + '/state', { phase:'lobby' }).catch(() => {});
+  return code;
+}
+const running = () => $('#game').dataset.running === '1';
+async function openLobby(){
+  show('lobby');
+  $('#lobbyStart').textContent = running() ? 'Zurück zum Spiel' : 'Spiel starten';
+  if (room.code) { drawLobby(); return; }
+  $('#roomCode').textContent = '····'; $('#qrBox').innerHTML = '';
+  $('#lobbyInfo').textContent = 'Spielraum wird geöffnet …';
+  try { await ensureRoom(); drawLobby(); }
+  catch (e) { $('#lobbyInfo').textContent = ''; showMsg(fbFail(e), openLobby); }
+}
+function tidyPlayers(){
+  const byName = {};
+  for (const [uid, p] of Object.entries(room.players)) {
+    if (!p || !p.name) continue;
+    const k = p.name.toLowerCase();
+    const prev = byName[k];
+    if (!prev) { byName[k] = [uid, p]; continue; }
+    const [old, keep] = (p.joined || 0) > (prev[1].joined || 0) ? [prev, [uid, p]] : [[uid, p], prev];
+    byName[k] = keep;
+    if (!old[1].online) FB.remove('rooms/' + room.code + '/players/' + old[0]).catch(() => {});
+  }
+}
+function playerList(players){
+  return Object.entries(players || {}).filter(([, p]) => p && p.name)
+    .sort((a, b) => (a[1].joined || 0) - (b[1].joined || 0));
+}
+function drawPeople(box, players, meUid){
+  box.innerHTML = '';
+  for (const [uid, p] of playerList(players)) {
+    const s = document.createElement('span');
+    s.className = 'person' + (p.online === false ? ' off' : '') + (uid === meUid ? ' me' : '');
+    s.textContent = p.name; s.title = p.online === false ? 'nicht verbunden' : 'verbunden';
+    box.append(s);
+  }
+}
+function drawLobby(){
+  if (!room.code) return;
+  $('#roomCode').textContent = room.code;
+  if (!$('#qrBox').firstChild) {
+    if (window.qrcode) {
+      const q = qrcode(0, 'M'); q.addData(joinUrl(room.code)); q.make();
+      $('#qrBox').innerHTML = q.createSvgTag({ cellSize:6, margin:0, scalable:true });
+    } else setTimeout(drawLobby, 400);
+  }
+  const list = playerList(room.players), on = list.filter(([, p]) => p.online !== false).length;
+  $('#peopleHead').textContent = !list.length ? 'Noch niemand da' : on === 1 ? '1 Spieler ist drin' : on + ' Spieler sind drin';
+  drawPeople($('#peopleList'), room.players);
+  $('#lobbyInfo').textContent = validSelection().length ? '' : 'Wähle in den Einstellungen zuerst mindestens eine Playlist.';
+  const t = $('#toLobby'); t.hidden = false; t.textContent = 'Raum ' + room.code + ' (' + on + ')';
+}
+async function lobbyStart(){
+  if (running()) { show('game'); keepAwake(); pushState(); return; }
+  startGame();
+}
+async function closeRoom(){
+  if (!room.code) { openSettings(); return; }
+  if (!confirm('Spielraum ' + room.code + ' schließen? Alle Mitspieler fliegen raus.')) return;
+  const code = room.code;
+  if (room.unsub) room.unsub();
+  Object.assign(room, { code:null, players:{}, unsub:null });
+  store.del('room'); $('#toLobby').hidden = true;
+  try { await FB.remove('rooms/' + code); } catch {}
+  openSettings();
+}
+
+/* ---------- Spielerhandy ---------- */
+const seat = { code:null, name:'', unsub:null, presence:null, room:null, tick:null };
+
+function openJoin(code){
+  show('pjoin');
+  const saved = store.get('join', null);
+  $('#joinCode').value = cleanCode(code || (saved && saved.code) || '');
+  $('#joinName').value = (saved && saved.name) || '';
+  $('#joinErr').textContent = '';
+  ($('#joinCode').value ? $('#joinName') : $('#joinCode')).focus();
+}
+async function joinRoom(){
+  const code = cleanCode($('#joinCode').value), name = $('#joinName').value.trim().replace(/\s+/g, ' ').slice(0, 20);
+  const err = $('#joinErr');
+  if (code.length !== 4) { err.textContent = 'Der Raumcode hat 4 Zeichen.'; return; }
+  if (!name) { err.textContent = 'Gib deinen Namen ein.'; return; }
+  err.textContent = ''; $('#joinBtn').disabled = true; $('#joinBtn').textContent = 'Verbinde …';
+  try {
+    await FB.start();
+    if (await FB.get('rooms/' + code + '/host') === null) { err.textContent = 'Diesen Spielraum gibt es nicht. Prüf den Code.'; return; }
+    const players = (await FB.get('rooms/' + code + '/players')) || {};
+    const clash = Object.entries(players).find(([uid, p]) => uid !== FB.uid && p && p.name && p.name.toLowerCase() === name.toLowerCase() && p.online !== false);
+    if (clash) { err.textContent = 'Der Name ist schon vergeben. Nimm einen anderen.'; return; }
+    await FB.set('rooms/' + code + '/players/' + FB.uid, { name, joined:FB.stamp(), online:true });
+    store.set('join', { code, name });
+    enterRoom(code, name);
+  } catch (e) { err.textContent = fbFail(e); }
+  finally { $('#joinBtn').disabled = false; $('#joinBtn').textContent = 'Beitreten'; }
+}
+function enterRoom(code, name){
+  leaveListeners();
+  Object.assign(seat, { code, name, room:null });
+  show('pplay'); keepAwake();
+  $('#rejoinBtn').hidden = true;
+  $('#pRoomInfo').textContent = name + ' in Raum ' + code;
+  seat.presence = FB.presence('rooms/' + code + '/players/' + FB.uid, { online:true, name }, { online:false });
+  seat.unsub = FB.on('rooms/' + code, drawPlayer, () => drawPlayer(null));
+  seat.tick = setInterval(playerTick, 200);
+}
+function leaveListeners(){
+  if (seat.unsub) seat.unsub();
+  if (seat.presence) seat.presence();
+  clearInterval(seat.tick);
+  Object.assign(seat, { unsub:null, presence:null, tick:null });
+}
+async function leaveRoom(){
+  if (!confirm('Spiel verlassen?')) return;
+  const path = 'rooms/' + seat.code + '/players/' + FB.uid;
+  leaveListeners();
+  FB.cancelPresence(path);
+  try { await FB.remove(path); } catch {}
+  store.del('join'); releaseAwake();
+  openJoin(seat.code);
+}
+function drawPlayer(r){
+  seat.room = r;
+  const wait = $('#pWait'), back = $('#pBack'), front = $('#pFront'), status = $('#pStatus');
+  if (!r || !r.host) {
+    leaveListeners(); releaseAwake();
+    back.hidden = true; front.hidden = true; status.textContent = '';
+    wait.hidden = false; wait.textContent = 'Der Spielraum wurde geschlossen.';
+    $('#pPeople').innerHTML = ''; $('#rejoinBtn').hidden = false; store.del('join');
+    return;
+  }
+  if ((!r.players || r.players[FB.uid] === undefined) && seat.name) {
+    const taken = Object.values(r.players || {}).some(p => p && p.name && p.name.toLowerCase() === seat.name.toLowerCase());
+    if (taken) {
+      leaveListeners(); releaseAwake(); store.del('join');
+      back.hidden = true; front.hidden = true; status.textContent = '';
+      wait.hidden = false; wait.textContent = 'Du spielst jetzt auf einem anderen Handy weiter.';
+      $('#rejoinBtn').hidden = false;
+      return;
+    }
+    FB.set('rooms/' + seat.code + '/players/' + FB.uid, { name:seat.name, joined:FB.stamp(), online:true }).catch(() => {});
+  }
+  drawPeople($('#pPeople'), r.players, FB.uid);
+  const st = r.state || { phase:'lobby' };
+  const showCard = st.revealed && st.card;
+  front.hidden = !showCard; back.hidden = !!showCard || st.phase === 'lobby';
+  wait.hidden = st.phase !== 'lobby';
+  $('#pRecord').classList.toggle('spin', st.phase === 'playing');
+  if (st.phase === 'lobby') { wait.textContent = 'Du bist drin. Warte, bis das Haupthandy das Spiel startet.'; status.textContent = ''; }
+  if (showCard) {
+    paintCard('p', st.card);
+    status.textContent = st.phase === 'playing' ? 'Läuft nochmal' : '';
+  } else if (st.phase !== 'lobby') {
+    status.textContent = { loading:'Gleich geht’s los …', ready:'Gleich kommt die nächste Karte.', playing:'Hör genau hin',
+                           stopped:'Zeit um. Aus welchem Jahr ist der Song?' }[st.phase] || '';
+    if (st.phase !== 'playing') { $('#pProg').style.strokeDashoffset = String(st.phase === 'stopped' ? RING : 0); $('#pCount').textContent = st.phase === 'stopped' ? '0' : ''; }
+  }
+  $('#pRoomInfo').textContent = seat.name + ' in Raum ' + seat.code + (st.total ? ', Karte ' + st.n + ' von ' + st.total : '');
+  playerTick();
+}
+function playerTick(){
+  const st = seat.room && seat.room.state;
+  if (!st || st.phase !== 'playing' || !st.endsAt || (st.revealed && st.card)) return;
+  const total = (st.secs || 20) * 1000, left = Math.max(0, st.endsAt - FB.now());
+  $('#pProg').style.strokeDashoffset = String(RING * Math.min(1, 1 - left / total));
+  $('#pCount').textContent = String(Math.ceil(left / 1000));
 }
 
 /* ---------- Bildschirm wach halten ---------- */
 let wakeLock = null;
 async function keepAwake(){
-  try { if ('wakeLock' in navigator && !$('#game').hidden && document.visibilityState === 'visible') wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+  try { if ('wakeLock' in navigator && (!$('#game').hidden || !$('#pplay').hidden) && document.visibilityState === 'visible' && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch {}
 }
 function releaseAwake(){ try { wakeLock && wakeLock.release(); } catch {} wakeLock = null; }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
@@ -608,20 +945,20 @@ async function startGame(){
   const ids = validSelection();
   if (!ids.length) { toast('Wähle mindestens eine Playlist.'); return; }
   if (sdkPlayer && sdkPlayer.activateElement) { try { sdkPlayer.activateElement(); } catch {} }
-  show('game'); game.revealed = false; game.card = null; deck = null; setPhase('loading'); keepAwake();
+  show('game'); $('#game').dataset.running = '1'; game.revealed = false; game.card = null; deck = null; setPhase('loading'); keepAwake();
   try {
     const cards = await buildDeck(ids);
     if (!cards.length) throw new UserError('In den gewählten Playlists gibt es keine abspielbaren Songs.');
     deck = { ids, cards, pos:0 }; saveDeck();
     setPhase('ready');
     toast(cards.length + ' Songs im Stapel.');
-  } catch (e) { show('settings'); releaseAwake(); handleError(e, startGame); }
+  } catch (e) { $('#game').dataset.running = ''; if (room.code) pushState(); room.code ? openLobby() : show('settings'); releaseAwake(); handleError(e, startGame); }
 }
 function resumeGame(){
   deck = store.get('deck', null);
   if (!deck || !deck.cards || !deck.cards.length) { toast('Kein gespeichertes Spiel gefunden.'); return; }
   if (sdkPlayer && sdkPlayer.activateElement) { try { sdkPlayer.activateElement(); } catch {} }
-  show('game'); game.revealed = false; game.card = null; setPhase('ready'); keepAwake();
+  show('game'); $('#game').dataset.running = '1'; game.revealed = false; game.card = null; setPhase('ready'); keepAwake();
 }
 async function toSettings(){
   if (game.phase === 'playing') await stopNow();
@@ -634,6 +971,8 @@ function openSettings(){
   if (!$('#resumeBtn').hidden) $('#resumeBtn').textContent = 'Weiterspielen (Karte ' + Math.min(d.pos, d.cards.length) + ' von ' + d.cards.length + ')';
   if (!playlists.length) loadPlaylists(); else { renderPlaylists(); renderMixes(); renderSelInfo(); }
   loadDevices();
+  const code = room.code || store.get('room', null);
+  $('#roomBtn').textContent = code ? 'Spielraum ' + code + ' öffnen' : 'Spielraum öffnen';
 }
 
 /* ---------- Fehlerbehandlung ---------- */
@@ -654,10 +993,35 @@ function handleError(e, retry){
 
 /* ---------- Start ---------- */
 function render(){
+  const q = new URLSearchParams(location.search), jc = cleanCode(q.get('join'));
+  const saved = store.get('join', null);
+  const hasSpotify = store.get('clientId', '') && store.get('token', null);
+  if (jc || (saved && !hasSpotify)) { startPlayer(jc, saved); return; }
+  renderHost();
+}
+function renderHost(){
   if (!store.get('clientId', '') || !store.get('token', null)) {
     $('#clientId').value = store.get('clientId', '');
     show('setup');
-  } else { loadSdk(); openSettings(); }
+  } else {
+    loadSdk(); openSettings();
+    if (store.get('room', null)) ensureRoom().catch(() => {});
+  }
+}
+async function startPlayer(code, saved){
+  if (saved && saved.name && (!code || saved.code === code)) {
+    show('pplay'); $('#pWait').hidden = false; $('#pWait').textContent = 'Verbinde mit Raum ' + saved.code + ' …';
+    $('#pBack').hidden = true; $('#pFront').hidden = true; $('#pStatus').textContent = '';
+    try {
+      await FB.start();
+      if (await FB.get('rooms/' + saved.code + '/host') !== null) {
+        await FB.update('rooms/' + saved.code + '/players/' + FB.uid, { name:saved.name, online:true, joined:FB.stamp() });
+        enterRoom(saved.code, saved.name); return;
+      }
+      store.del('join');
+    } catch (e) { openJoin(saved.code); $('#joinErr').textContent = fbFail(e); return; }
+  }
+  openJoin(code);
 }
 function wire(){
   $('#redirectShow').textContent = redirectUri();
@@ -682,6 +1046,18 @@ function wire(){
   $('#againBtn').onclick = playAgain;
   $('#msgRetry').onclick = () => { $('#msg').hidden = true; if (retryFn) retryFn(); };
   $('#msgClose').onclick = () => { $('#msg').hidden = true; };
+  $('#roomBtn').onclick = openLobby;
+  $('#toLobby').onclick = openLobby;
+  $('#lobbySettings').onclick = openSettings;
+  $('#lobbyStart').onclick = lobbyStart;
+  $('#closeRoom').onclick = closeRoom;
+  $('#joinBtn').onclick = joinRoom;
+  $('#joinName').onkeydown = e => { if (e.key === 'Enter') joinRoom(); };
+  $('#joinCode').oninput = e => { e.target.value = cleanCode(e.target.value); };
+  $('#toHost').onclick = () => { history.replaceState(null, '', redirectUri()); renderHost(); };
+  $('#playOnly').onclick = () => openJoin('');
+  $('#leaveBtn').onclick = leaveRoom;
+  $('#rejoinBtn').onclick = () => openJoin(seat.code);
 }
 (async () => {
   wire();
