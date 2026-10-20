@@ -144,10 +144,17 @@ textarea.field{min-height:5rem;resize:vertical}
 .banner.plain{background:var(--surface);border:1px solid var(--line)}
 .banner.plain .bc{font-size:1.1rem}
 .board{display:grid;gap:.4rem;margin-top:.8rem}
-.prow{display:flex;align-items:center;gap:.6rem;background:var(--surface);border-radius:12px;padding:.55rem .8rem}
-.prow .pn{flex:1;font-weight:600;overflow-wrap:anywhere}
-.prow .ps{font-family:var(--head);font-size:.85rem;white-space:nowrap}
-.prow .pi{font-size:.85rem;color:var(--muted);text-align:right}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:.25rem .6rem;background:var(--surface);border-radius:12px;padding:.6rem .9rem}
+.prow .pn{grid-row:1;grid-column:1;font-weight:700;font-size:1.05rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prow .lvl{grid-row:1;grid-column:2}
+.prow .ps{grid-row:1;grid-column:3;font-family:var(--head);font-size:.85rem;white-space:nowrap}
+.prow .pi{grid-row:2;grid-column:1 / -1;font-size:.88rem;color:var(--muted);line-height:1.3}
+.prow .pi:empty{display:none}
+.hist{display:flex;align-items:center;justify-content:space-between;gap:.6rem;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:.5rem .8rem;margin:.4rem 0}
+.hist .hl{font-size:.85rem;color:var(--muted);white-space:nowrap}
+.hist .dots{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end;padding:3px}
+.hist .dot{width:18px;height:18px;border-radius:50%;flex:none}
+.hist .dot.now{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--text)}
 .prow.turn{box-shadow:inset 0 0 0 2px var(--accent)}
 .prow.off{opacity:.55}
 .ok{color:var(--ok)}
@@ -168,7 +175,7 @@ textarea.field{min-height:5rem;resize:vertical}
 .gap.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);min-height:44px}
 .gap:disabled{cursor:default;min-height:12px;border-color:transparent}
 .gap.end:disabled{min-height:22px;border-color:var(--line)}
-.tlhead{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;margin-top:1rem}
+.tlhead{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:.2rem 1rem;margin-top:1rem}
 
 /* Bingo */
 .bgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:.8rem}
@@ -379,6 +386,7 @@ textarea.field{min-height:5rem;resize:vertical}
 <section class="screen" id="mgame" hidden>
   <div class="gamebar"><button class="link" id="mMenu">Spiel beenden</button><button class="roomlink" id="toLobby" hidden></button><span id="mInfo"></span></div>
   <div id="mBanner"></div>
+  <div id="mHist"></div>
   <div class="stage">
     <div class="disc" id="mDisc">
       <svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="46"/><circle class="prog" id="mProg" cx="50" cy="50" r="46"/></svg>
@@ -415,6 +423,7 @@ textarea.field{min-height:5rem;resize:vertical}
 <section class="screen" id="pplay" hidden>
   <div class="gamebar"><span id="pRoomInfo"></span><button class="link" id="leaveBtn">Verlassen</button></div>
   <div id="pBanner"></div>
+  <div id="pHist"></div>
   <div class="mini-status" id="pMini" hidden>
     <div class="disc mini">
       <svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="46"/><circle class="prog" id="pProg" cx="50" cy="50" r="46"/></svg>
@@ -903,16 +912,17 @@ async function resolveDevice(){
 const isSkippable = e => e instanceof ApiError && (e.status === 400 || (e.status === 403 && e.reason !== 'PREMIUM_REQUIRED'));
 const clip = { token:0, timer:null, on:false };
 async function pauseMusic(){ try { await api('/me/player/pause', { method:'PUT' }); } catch (e) { if (e instanceof AuthError) handleError(e); } }
-async function playClip(card, onEnd, endless){
+// resume = { pos, left }: nach einer Pause an der gestoppten Stelle weiterspielen, nur noch die restliche Hörzeit
+async function playClip(card, onEnd, resume){
   const tok = ++clip.token; clearTimeout(clip.timer);
   const dev = await resolveDevice();
+  const pos = resume ? resume.pos : (card.start || 0);
   try {
-    await api('/me/player/play?device_id=' + encodeURIComponent(dev), { method:'PUT', body:JSON.stringify({ uris:[card.uri], position_ms:card.start || 0 }) });
+    await api('/me/player/play?device_id=' + encodeURIComponent(dev), { method:'PUT', body:JSON.stringify({ uris:[card.uri], position_ms:pos }) });
   } catch (e) { if (isSkippable(e)) throw new SkipError(); throw e; }
   if (tok !== clip.token) return null;
-  clip.on = true;
-  if (endless) return { tok, dur:0 };
-  const dur = seconds() * 1000;
+  const dur = resume ? Math.max(0, resume.left) : seconds() * 1000;
+  Object.assign(clip, { on:true, card, onEnd, pos0:pos, t0:Date.now(), end:Date.now() + dur });
   clip.timer = setTimeout(() => { if (tok === clip.token) { clip.token++; clip.on = false; pauseMusic(); onEnd(); } }, dur);
   return { tok, dur };
 }
@@ -1114,6 +1124,27 @@ function makeGrid(){
   for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) g.push(S[(R[r] + C[c]) % 5]);
   return g;
 }
+/* 50 feste, zufällig erzeugte Bingokarten. Jeder Spieler bekommt eine andere davon. */
+const CARD_POOL = (() => {
+  let a = 20261020;
+  const r = () => { a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const perm = () => { const p = [0, 1, 2, 3, 4]; for (let i = 4; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [p[i], p[j]] = [p[j], p[i]]; } return p; };
+  const seen = new Set(), pool = [];
+  while (pool.length < 50) {
+    const R = perm(), C = perm(), S = perm(), g = [];
+    for (let y = 0; y < 5; y++) for (let x = 0; x < 5; x++) g.push(S[(R[y] + C[x]) % 5]);
+    const k = g.join('');
+    if (!seen.has(k)) { seen.add(k); pool.push(g); }
+  }
+  return pool;
+})();
+function dealCard(){
+  const used = new Set(Object.values(M.pl).map(p => p.cardNo));
+  const free = CARD_POOL.map((_, i) => i).filter(i => !used.has(i));
+  if (!free.length) return { cardNo:null, grid:makeGrid() };
+  const i = free[rnd(free.length)];
+  return { cardNo:i, grid:CARD_POOL[i].slice() };
+}
 const LINES = (() => {
   const L = [];
   for (let i = 0; i < 5; i++) { L.push([0, 1, 2, 3, 4].map(c => i * 5 + c)); L.push([0, 1, 2, 3, 4].map(r => r * 5 + i)); }
@@ -1231,7 +1262,7 @@ function renderHome(){
     drawLevels(box);
   }
   const hints = {
-    turns:'Der Song läuft, bis eingeordnet ist. Ein gleiches Jahr wie die Nachbarkarte zählt als richtig.',
+    turns:'Wer dran ist, kann schon während des Songs einordnen. Sobald er bestätigt, wird aufgedeckt. Ein gleiches Jahr wie die Nachbarkarte zählt als richtig.',
     together:'Aufgedeckt wird, wenn die Zeit um ist. Ein gleiches Jahr wie die Nachbarkarte zählt als richtig. Erreichen mehrere in derselben Runde das Ziel, gewinnen sie gemeinsam.',
     bingo:r.check === 'exact' ? 'Eintippen: Der Titel muss stimmen, Zusätze wie „Remastered“ zählen nicht.' : r.check === 'fuzzy' ? 'Eintippen ungenau: Kleine Tippfehler wie „Diorr 2001“ zählen noch als richtig.' : 'Selbst: Titel und Künstler sagt man laut und bewertet sich danach selbst.',
     solo:'Keine Regeln. Du ziehst Karten, hörst und drehst um.'
@@ -1494,7 +1525,7 @@ function syncPlayers(){
     if (M.pl[k]) continue;
     const p = M.pl[k] = newPlayer(info.name, k);
     if (M.mode === 'turns' || M.mode === 'together') { const c = takeCard(); if (c) p.line = [lineCard(c)]; }
-    if (M.mode === 'bingo') { p.grid = makeGrid(); p.marks = Array(25).fill(false); }
+    if (M.mode === 'bingo') { Object.assign(p, dealCard()); p.marks = Array(25).fill(false); }
     M.order.push(k); changed = true;
   }
   if (M.mode === 'turns' && M.phase === 'ready' && M.turn && !onlineKeys().has(M.turn)) { M.turn = nextTurn(M.turn, true); changed = true; }
@@ -1534,7 +1565,7 @@ async function startMatch(){
 function resumeMatch(){
   const s = store.get('match', null);
   if (!s) return;
-  M = s; M.timer = null;
+  M = s; M.timer = null; M.paused = null; pausedMusic = null;
   if (M.phase === 'playing' || M.phase === 'loading') M.phase = M.mode === 'solo' ? 'stopped' : M.mode === 'bingo' ? 'answering' : 'placing';
   if (M.phase === 'answering') setTimer('answer', M.answerSecs);
   if (M.phase === 'placing' && M.mode === 'together') setTimer('place', M.placeSecs);
@@ -1548,7 +1579,7 @@ function setTimer(kind, secs){
 }
 function startTick(){ if (!tickT) tickT = setInterval(tick, 200); }
 function autoReady(){
-  if (!M || !M.auto || M.phase !== 'reveal' || M.timer) return false;
+  if (!M || !M.auto || M.phase !== 'reveal' || M.timer || M.paused) return false;
   if (M.mode === 'bingo') {
     const on = onlineKeys();
     return !Object.entries(M.pl).some(([k, p]) => on.has(k) && (p.result === 'pending' || (p.canMark !== null && p.canMark !== undefined)));
@@ -1566,7 +1597,7 @@ function setAuto(v){
   saveMatch(); pushState(); renderMatch();
 }
 function tick(){
-  if (!M) return;
+  if (!M || M.paused) return;
   if (autoReady()) { setTimer('next', AUTO_SECS); pushState(); renderMatch(); }
   const t = M.timer;
   if (!t) return;
@@ -1593,6 +1624,7 @@ async function drawRound(){
   if (!M || M.phase === 'over' || M.phase === 'loading' || M.phase === 'playing') return;
   if (M.mode === 'turns' && !M.turn) { toast('Es ist niemand verbunden.'); return; }
   stopClip();
+  clearPause();
   M.round++; M.revealed = false; M.newCard = null; M.songIdx = 0; M.timer = null; M.lastTurn = null;
   for (const p of Object.values(M.pl)) {
     Object.assign(p, { placed:null, result:null, almost:false, ans:null, self:null, answered:false, said:'' });
@@ -1601,6 +1633,7 @@ async function drawRound(){
   let n = 1;
   if (M.mode === 'bingo') {
     M.color = rnd(5);
+    M.hist = [M.color, ...(M.hist || [])].slice(0, 10);
     M.tasks = { normal:M.colors.normal[M.color], adv:M.colors.adv[M.color] };
     n = levelsInPlay().some(l => M.tasks[l].kind === 'two') ? 2 : 1;
   } else { M.color = null; M.tasks = null; }
@@ -1611,20 +1644,18 @@ async function drawRound(){
   catch (e) { M.phase = 'ready'; M.round--; renderMatch(); pushState(); handleError(e, drawRound); }
 }
 async function startSong(i){
-  // Reihum: Der Song läuft ohne Zeitlimit, bis eingeordnet ist
-  const endless = M.mode === 'turns';
   for (let tries = 0; tries < 4; tries++) {
     const c = M.cards[i];
-    c.start = startPos(c.duration, endless ? 30 : seconds());
+    c.start = startPos(c.duration, seconds());
     let res;
-    try { res = await playClip(c, () => songEnded(i), endless); }
+    try { res = await playClip(c, () => songEnded(i)); }
     catch (e) {
       if (e instanceof SkipError) { dropCard(c); const nc = takeCard(); if (!nc) break; M.cards[i] = nc; continue; }
       throw e;
     }
     if (!res) return;
     M.songIdx = i + 1; M.phase = 'playing'; M.msg = '';
-    if (endless) M.timer = null; else setTimer('song', res.dur / 1000);
+    setTimer('song', res.dur / 1000);
     saveMatch(); pushState(); renderMatch();
     clipRunsFine(c, res.tok).then(ok => {
       if (ok || res.tok !== clip.token || !M || M.phase !== 'playing') return;
@@ -1638,7 +1669,7 @@ async function startSong(i){
   throw new UserError('Vier Songs hintereinander ließen sich nicht abspielen. Prüfe, ob Spotify auf dem Abspielgerät läuft.');
 }
 function songEnded(i){
-  if (!M || M.phase !== 'playing') return;
+  if (!M || M.phase !== 'playing') { if (M) renderMatch(); return; }
   if (M.cards.length === 2 && i === 0) {
     M.phase = 'loading'; M.msg = 'Song 2 wird gestartet …'; renderMatch(); pushState();
     startSong(1).catch(e => { afterSongs(); handleError(e); });
@@ -1662,6 +1693,35 @@ function stopSongEarly(){
   stopClip();
   songEnded(M.songIdx - 1);
 }
+/* Pause: Song und Uhr anhalten, später an derselben Stelle weiter */
+let pausedMusic = null;
+const canPause = () => !!(M && !M.paused && (clip.on || (M.timer && M.phase !== 'over')));
+function pauseGame(){
+  if (!canPause()) return;
+  const now = Date.now();
+  pausedMusic = clip.on ? { card:clip.card, onEnd:clip.onEnd, pos:clip.pos0 + (now - clip.t0), left:Math.max(0, clip.end - now) } : null;
+  const t = M.timer ? { kind:M.timer.kind, total:M.timer.total, left:Math.max(0, M.timer.local - now) } : null;
+  clip.token++; clearTimeout(clip.timer);
+  if (clip.on) pauseMusic();
+  clip.on = false;
+  M.timer = null; M.paused = { t };
+  saveMatch(); pushState(); renderMatch();
+}
+async function resumeGame(){
+  if (!M || !M.paused) return;
+  const p = M.paused, mus = pausedMusic;
+  if (mus && mus.left > 300) {
+    try { const res = await playClip(mus.card, mus.onEnd, { pos:mus.pos, left:mus.left }); if (!res) return; }
+    catch (e) { if (e instanceof SkipError) showMsg('Spotify spielt diesen Song gerade nicht weiter.'); else handleError(e, resumeGame); return; }
+  }
+  if (!M || M.paused !== p) return;
+  M.paused = null; pausedMusic = null;
+  if (p.t) M.timer = { kind:p.t.kind, total:p.t.total, end:fbNow() + p.t.left, local:Date.now() + p.t.left };
+  saveMatch(); pushState(); renderMatch();
+  if (mus && mus.left <= 300) mus.onEnd();
+}
+function clearPause(){ if (M) M.paused = null; pausedMusic = null; }
+
 // Bingo: aufgedeckt wird, sobald alle mit Eingabefeld geantwortet haben. Zeitstrahl gleichzeitig wartet immer auf das Ende der Zeit.
 function checkAllDone(){
   if (!M || M.revealed || M.mode !== 'bingo' || M.phase !== 'answering') return;
@@ -1676,6 +1736,7 @@ function placeOk(line, gap, y){
 function reveal(){
   if (!M || M.revealed) return;
   if (M.phase === 'loading' || (M.phase === 'playing' && M.mode !== 'turns')) stopClip();
+  clearPause();
   M.timer = null; M.revealed = true; M.phase = 'reveal';
   scoreRound(M.mode === 'turns' ? [M.turn] : Object.keys(M.pl));
   saveMatch(); pushState(); renderMatch();
@@ -1711,7 +1772,7 @@ function settleBingo(p){
 function forceReveal(){ if (M && ['placing', 'answering', 'playing', 'loading'].includes(M.phase) && M.round) reveal(); }
 function nextRound(){
   if (!M) return;
-  M.timer = null;
+  M.timer = null; clearPause();
   if (M.mode === 'turns') {
     // Die aufgedeckte Karte bleibt sichtbar, bis die nächste Karte gezogen wird
     stopClip(); M.lastTurn = M.turn; M.turn = nextTurn(M.turn, false); M.phase = 'ready';
@@ -1730,13 +1791,13 @@ async function replay(){
 function soloFlip(){ if (M && M.phase === 'stopped') { M.phase = 'reveal'; M.revealed = true; saveMatch(); pushState(); renderMatch(); } }
 function endMatchToHome(){
   if (running() && M.round && !confirm('Spiel beenden? Der Spielstand wird gelöscht. Die Mitspieler bleiben im Spielraum.')) return;
-  stopClip();
+  stopClip(); clearPause();
   store.del('match'); M = null;
   pushState();
   openHome();
 }
 function playAgain(){
-  stopClip(); M = null; store.del('match'); pushState();
+  stopClip(); clearPause(); M = null; store.del('match'); pushState();
   if (rules().mode === 'solo' || (room.code && onlineKeys().size)) startMatch(); else openHome();
 }
 
@@ -1854,14 +1915,14 @@ function pushState(){
   for (const [k, p] of Object.entries(M.pl)) {
     pl[k] = { name:p.name, lvl:p.lvl || 'normal', line:p.line, placed:p.placed !== null, answered:!!p.answered, result:p.result || null, almost:open ? !!p.almost : false,
               gap:open && p.placed !== null ? p.placed : null, said:open ? (p.said || '') : '',
-              grid:p.grid || null, marks:p.marks || null, canMark:p.canMark === undefined ? null : p.canMark };
+              grid:p.grid || null, cardNo:p.cardNo === undefined ? null : p.cardNo, marks:p.marks || null, canMark:p.canMark === undefined ? null : p.canMark };
   }
   const t = M.timer;
   const st = {
-    mode:M.mode, phase:M.phase, round:M.round, target:M.target || 0, win:M.win, check:M.check, auto:!!M.auto,
+    mode:M.mode, phase:M.phase, round:M.round, target:M.target || 0, win:M.win, check:M.check, auto:!!M.auto, paused:M.paused ? (M.paused.t || { kind:'none', total:1, left:0 }) : null,
     turn:M.turn || null, lastTurn:M.lastTurn || null, order:M.order, songIdx:M.songIdx || 0, songs:M.cards.length,
     timer:t ? { kind:t.kind, total:t.total, end:t.end } : null,
-    color:M.color, tasks:M.tasks || null,
+    color:M.color, tasks:M.tasks || null, hist:M.hist || [],
     cards:open && M.cards.length ? M.cards.map(c => ({ title:c.title, artist:c.artist, year:c.year, album:c.album })) : null,
     newCard:open ? M.newCard : null, winners:M.winners, pl,
     n:M.deck.pos, total:M.deck.cards.length
@@ -1881,6 +1942,12 @@ function bannerHtml(colorIdx, title, extra){
   return '<div class="banner" style="background:' + c.bg + ';color:' + c.fg + '"><div class="bc">' + esc(c.name) + '</div><div class="bt">' + esc(title) + '</div>' +
     (extra ? '<div class="bt">' + esc(extra) + '</div>' : '') + '</div>';
 }
+// Die letzten 10 Bingofarben, neueste links und umrandet
+function histHtml(hist){
+  if (!hist || !hist.length) return '';
+  const dots = hist.map((c, i) => '<span class="dot' + (i ? '' : ' now') + '" style="background:' + COLORS[c].bg + '" title="' + COLORS[c].name + '"></span>').join('');
+  return '<div class="hist" aria-label="Letzte Farben: ' + hist.map(c => COLORS[c].name).join(', ') + '"><span class="hl">Zuletzt</span><span class="dots">' + dots + '</span></div>';
+}
 const autoBarHtml = text => '<div class="autobar"><div class="fill"></div><span>' + esc(text) + '</span></div>';
 function setHtml(node, html){ if (node.dataset.html !== html) { node.innerHTML = html; node.dataset.html = html; } }
 function renderMatch(){
@@ -1897,6 +1964,7 @@ function renderMatch(){
   }
   else if (M.mode === 'turns' && M.turn && M.phase !== 'over' && M.phase !== 'loading') setHtml($('#mBanner'), '<div class="banner plain"><div class="muted small">Am Zug</div><div class="bc">' + esc(name(M.turn)) + '</div></div>');
   else setHtml($('#mBanner'), '');
+  setHtml($('#mHist'), M.mode === 'bingo' ? histHtml(M.hist) : '');
   const showCards = M.revealed && M.cards.length > 0;
   const replaying = !!(M.timer && M.timer.kind === 'replay');
   const cardsVisible = showCards && !(M.phase === 'over' && M.mode === 'bingo');
@@ -1904,8 +1972,13 @@ function renderMatch(){
   $('#mCards').hidden = !cardsVisible;
   $('#mCards').className = 'cards' + (M.cards.length > 1 ? ' two' : '');
   if (showCards) setHtml($('#mCards'), M.cards.map((c, i) => cardHtml(c, M.cards.length > 1 ? 'Song ' + (i + 1) : '')).join(''));
-  $('#mRecord').classList.toggle('spin', M.phase === 'playing' || replaying);
-  if (!M.timer || M.timer.kind === 'next') {
+  $('#mRecord').classList.toggle('spin', !M.paused && (M.phase === 'playing' || replaying));
+  const pt = M.paused && M.paused.t;
+  if (pt && pt.kind !== 'next') {
+    $('#mProg').style.strokeDashoffset = String(RING * Math.min(1, 1 - pt.left / pt.total));
+    $('#mCount').textContent = String(Math.ceil(pt.left / 1000)); $('#mCount').classList.remove('hurry');
+    $('#mProg').classList.toggle('alt', pt.kind === 'place' || pt.kind === 'answer');
+  } else if (!M.timer || M.timer.kind === 'next') {
     $('#mProg').style.strokeDashoffset = M.phase === 'stopped' || M.phase === 'placing' || M.phase === 'answering' ? String(RING) : '0';
     $('#mCount').textContent = ''; $('#mCount').classList.remove('hurry');
   }
@@ -1923,7 +1996,7 @@ function renderMatch(){
     answering:needers.length ? answeredN + ' von ' + needers.length + ' haben geantwortet' : 'Jetzt laut antworten, dann aufdecken.',
     stopped:'Zeit um. Aus welchem Jahr ist der Song?'
   }[M.phase] || '';
-  $('#mStatus').textContent = replaying ? 'Läuft nochmal' : status;
+  $('#mStatus').textContent = M.paused ? 'Pausiert' : replaying ? 'Läuft nochmal' : status;
   let res = '';
   if (M.phase === 'over') res = '<div class="win"><div class="muted">Gewonnen hat</div><div class="wt">' + esc(M.winners.map(name).join(' und ') || 'niemand') + '</div></div>';
   else if (M.revealed && M.mode === 'turns') {
@@ -1934,18 +2007,26 @@ function renderMatch(){
   if (cardsVisible) res += '<button class="link fixlink" id="fixBtn" type="button">Jahr falsch? Korrigieren</button>';
   setHtml($('#mResult'), res);
   const fixBtn = $('#fixBtn'); if (fixBtn) fixBtn.onclick = openFix;
-  if (M.timer && M.timer.kind === 'next') setHtml($('#mAuto'), autoBarHtml('Nächste Karte in ' + AUTO_SECS + ' s'));
+  if (M.paused && M.paused.t && M.paused.t.kind === 'next') setHtml($('#mAuto'), '<div class="autobar"><span>Automatik pausiert</span></div>');
+  else if (M.timer && M.timer.kind === 'next') setHtml($('#mAuto'), autoBarHtml('Nächste Karte in ' + AUTO_SECS + ' s'));
   else if (M.auto && M.phase === 'reveal') setHtml($('#mAuto'), '<div class="autobar"><span>Automatik wartet, bis alle ihr Feld gewählt oder sich bewertet haben …</span></div>');
   else setHtml($('#mAuto'), '');
   const acts = $('#mActions'); acts.innerHTML = '';
   const btn = (label, fn, primary) => { const b = txt('button', 'btn ' + (primary ? 'primary' : 'secondary'), label); b.type = 'button'; b.onclick = fn; acts.append(b); };
-  if (M.phase === 'ready') btn(M.mode === 'turns' ? 'Karte für ' + name(M.turn) + ' ziehen' : M.round ? 'Nächste Runde' : 'Erste Karte ziehen', drawRound, true);
-  if (M.phase === 'playing' || replaying || (M.phase === 'reveal' && clip.on && M.mode === 'turns')) btn('Song stoppen', stopSongEarly, false);
-  if (M.phase === 'placing' || M.phase === 'answering') btn('Jetzt aufdecken', forceReveal, M.mode === 'bingo' && !needers.length);
-  if (M.phase === 'stopped') { btn('Karte umdrehen', soloFlip, true); btn('Nochmal hören', replay, false); }
-  if (M.phase === 'reveal') {
-    btn(M.mode === 'turns' ? 'Weiter mit ' + name(nextTurn(M.turn, false)) : M.mode === 'bingo' ? 'Nächste Runde' : 'Nächste Karte', nextRound, true);
-    if (!replaying && !clip.on) btn('Nochmal hören', replay, false);
+  const nextLabel = M.mode === 'turns' ? 'Weiter mit ' + name(nextTurn(M.turn, false)) : M.mode === 'bingo' ? 'Nächste Runde' : 'Nächste Karte';
+  if (M.paused) {
+    btn('▶ Weiter', resumeGame, true);
+    if (M.phase === 'reveal') btn(nextLabel, nextRound, false);
+  } else {
+    if (M.phase === 'ready') btn(M.mode === 'turns' ? 'Karte für ' + name(M.turn) + ' ziehen' : M.round ? 'Nächste Runde' : 'Erste Karte ziehen', drawRound, true);
+    if (canPause()) btn('❚❚ Pause', pauseGame, false);
+    if (M.phase === 'playing' || replaying || (M.phase === 'reveal' && clip.on)) btn('Song stoppen', stopSongEarly, false);
+    if (M.phase === 'placing' || M.phase === 'answering') btn('Jetzt aufdecken', forceReveal, M.mode === 'bingo' && !needers.length);
+    if (M.phase === 'stopped') { btn('Karte umdrehen', soloFlip, true); btn('Nochmal hören', replay, false); }
+    if (M.phase === 'reveal') {
+      btn(nextLabel, nextRound, true);
+      if (!replaying && !clip.on) btn('Nochmal hören', replay, false);
+    }
   }
   if (M.phase === 'over') { btn('Nochmal spielen', playAgain, true); btn('Zum Hauptmenü', endMatchToHome, false); }
   const ar = $('#mAutoRow'); ar.innerHTML = ''; ar.className = 'row2 first col'; ar.hidden = M.phase === 'over';
@@ -1971,9 +2052,9 @@ function renderBoard(){
     if (M.mode === 'bingo' && !M.revealed && M.round && needsInput(taskFor(p), M.check)) info = p.answered ? '✓ geantwortet' : '…';
     if (M.revealed && p.result && (M.mode !== 'turns' || k === judged)) {
       const t = p.result === 'right' ? (p.almost ? 'richtig, nicht ganz richtig geschrieben' : 'richtig') : p.result === 'wrong' ? 'falsch' : 'bewertet sich …';
-      info = (p.said ? esc(p.said) + ', ' : '') + t;
+      info = (p.said ? '„' + esc(p.said) + '“ · ' : '') + t;
     }
-    if (M.mode === 'bingo' && p.canMark !== null && p.canMark !== undefined) info += (info ? ', ' : '') + 'wählt ein Feld';
+    if (M.mode === 'bingo' && p.canMark !== null && p.canMark !== undefined) info += (info ? ' · ' : '') + 'wählt ein Feld';
     const score = M.mode === 'bingo' ? 'noch ' + bingoMissing(p.marks, M.win) : p.line.length + '/' + M.target;
     row.innerHTML = '<span class="pn">' + (mark === 'right' ? '✓ ' : mark === 'wrong' ? '✗ ' : '') + esc(p.name) + '</span><span class="pi">' + info + '</span><span class="ps">' + esc(score) + '</span>';
     if (M.mode === 'bingo') {
@@ -2049,7 +2130,7 @@ function send(act){
 function playerGone(text){
   leaveListeners(); store.del('join');
   $('#pMini').hidden = true; $('#pCards').hidden = true;
-  ['#pBanner', '#pResult', '#pMain', '#pActions', '#pOthers', '#pAuto'].forEach(s => { $(s).innerHTML = ''; delete $(s).dataset.html; });
+  ['#pBanner', '#pHist', '#pResult', '#pMain', '#pActions', '#pOthers', '#pAuto'].forEach(s => { $(s).innerHTML = ''; delete $(s).dataset.html; });
   seat.formKey = '';
   $('#pWait').hidden = false; $('#pWait').textContent = text; $('#rejoinBtn').hidden = false;
 }
@@ -2067,7 +2148,7 @@ function drawPlayer(r){
   $('#pRoomInfo').textContent = seat.name + ' in Raum ' + seat.code + (st.round ? ', Runde ' + st.round : '');
   if (st.phase === 'lobby' || !st.mode || (st.mode !== 'solo' && !meP)) {
     mini.hidden = true; cards.hidden = true;
-    ['#pBanner', '#pResult', '#pMain', '#pActions', '#pAuto'].forEach(s => { $(s).innerHTML = ''; delete $(s).dataset.html; });
+    ['#pBanner', '#pHist', '#pResult', '#pMain', '#pActions', '#pAuto'].forEach(s => { $(s).innerHTML = ''; delete $(s).dataset.html; });
     seat.formKey = '';
     wait.hidden = false;
     wait.textContent = st.phase === 'lobby' || !st.phase ? 'Du bist drin. Warte, bis das Haupthandy das Spiel startet.' + (st.mode ? ' Gespielt wird: ' + MODES[st.mode].name + '.' : '')
@@ -2082,22 +2163,23 @@ function drawPlayer(r){
   if (st.mode === 'bingo' && myTask && st.color !== null && st.color !== undefined && st.round && st.phase !== 'ready') setHtml($('#pBanner'), bannerHtml(st.color, myTask.name));
   else if (st.mode === 'turns' && st.turn && st.phase !== 'over') setHtml($('#pBanner'), '<div class="banner plain"><div class="muted small">Am Zug</div><div class="bc">' + (myTurn ? 'Du' : esc(name(st.turn))) + '</div></div>');
   else setHtml($('#pBanner'), '');
+  setHtml($('#pHist'), st.mode === 'bingo' ? histHtml(st.hist) : '');
   const showCards = !!(st.cards && st.cards.length);
   const turnsReady = st.mode === 'turns' && st.phase === 'ready';
   mini.hidden = st.phase === 'over' || (showCards && !replaying && !turnsReady) || (st.phase === 'ready' && st.mode !== 'turns') || (!st.round && st.mode !== 'turns');
-  $('#pRecord').classList.toggle('spin', st.phase === 'playing' || replaying);
+  $('#pRecord').classList.toggle('spin', !st.paused && (st.phase === 'playing' || replaying));
   const placedMe = meP && (meP.placed || seat.sentRound === st.round);
-  $('#pStatus').textContent = replaying ? 'Läuft nochmal' : {
+  $('#pStatus').textContent = st.paused ? 'Pausiert' : replaying ? 'Läuft nochmal' : {
     loading:'Gleich geht’s los …',
     ready:st.mode === 'turns' ? (myTurn ? 'Du bist dran. Zieh eine Karte.' : name(st.turn) + ' ist dran.') : 'Gleich kommt die nächste Karte.',
     playing:st.songs === 2 ? 'Song ' + st.songIdx + ' von 2 läuft'
-      : st.mode === 'turns' ? (myTurn ? 'Hör hin und ordne ein. Der Song läuft, bis du bestätigst.' : name(st.turn) + ' hört und ordnet ein …')
+      : st.mode === 'turns' ? (myTurn ? 'Hör hin und ordne ein. Sobald du bestätigst, wird aufgedeckt.' : name(st.turn) + ' hört und ordnet ein …')
       : st.mode === 'together' ? (placedMe ? 'Eingeordnet. Aufgedeckt wird, wenn die Zeit um ist.' : 'Hör hin und ordne ein.') : 'Hör genau hin',
     placing:st.mode === 'turns' ? (myTurn ? 'Wo gehört der Song hin?' : name(st.turn) + ' ordnet ein …') : (placedMe ? 'Eingeordnet. Aufgedeckt wird, wenn die Zeit um ist.' : 'Wo gehört der Song hin?'),
     answering:needsInput(myTask, st.check) ? (meP && meP.answered ? 'Antwort abgeschickt. Warte auf die anderen.' : 'Jetzt antworten') : 'Sag deine Antwort laut.',
     stopped:'Zeit um.'
   }[st.phase] || '';
-  if (!st.timer || st.timer.kind === 'next') {
+  if (!st.paused && (!st.timer || st.timer.kind === 'next')) {
     $('#pProg').style.strokeDashoffset = st.phase === 'placing' || st.phase === 'answering' ? String(RING) : '0';
     $('#pCount').textContent = ''; $('#pBig').textContent = ''; $('#pBig').classList.remove('hurry');
   }
@@ -2258,7 +2340,7 @@ function drawBingoArea(st, meP, myTask){
   const gb = $('#pGridBox'); gb.innerHTML = '';
   const can = meP.canMark !== null && meP.canMark !== undefined ? meP.canMark : null;
   const head = el('div', 'tlhead');
-  head.append(txt('h2', '', 'Deine Bingokarte'), txt('span', 'muted small', (WIN_NAMES[st.win] || 'Eine Reihe') + ', noch ' + bingoMissing(meP.marks, st.win) + ' Felder'));
+  head.append(txt('h2', '', 'Deine Bingokarte' + (meP.cardNo !== null && meP.cardNo !== undefined ? ' Nr. ' + (meP.cardNo + 1) : '')), txt('span', 'muted small', (WIN_NAMES[st.win] || 'Eine Reihe') + ', noch ' + bingoMissing(meP.marks, st.win) + ' Felder'));
   const grid = el('div', 'bgrid');
   meP.grid.forEach((ci, i) => {
     const c = COLORS[ci], marked = meP.marks && meP.marks[i], b = txt('button', 'cell', marked ? '✓' : ''); b.type = 'button';
@@ -2292,6 +2374,14 @@ function drawOthers(r, st){
 }
 function playerTick(){
   const st = seat.room && seat.room.state, big = $('#pBig');
+  if (st && st.paused) {
+    const p = st.paused, choose = p.kind === 'place' || p.kind === 'answer', secs = String(Math.ceil(p.left / 1000));
+    big.classList.remove('hurry');
+    if (p.kind === 'none' || p.kind === 'next') { big.textContent = ''; return; }
+    $('#pProg').style.strokeDashoffset = String(RING * Math.min(1, 1 - p.left / p.total));
+    $('#pCount').textContent = choose ? '' : secs; big.textContent = choose ? secs : '';
+    return;
+  }
   if (!st || !st.timer) { if (big.textContent) { big.textContent = ''; big.classList.remove('hurry'); } return; }
   const t = st.timer, left = Math.max(0, t.end - FB.now()), secs = String(Math.ceil(left / 1000));
   if (t.kind === 'next') {
