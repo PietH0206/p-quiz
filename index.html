@@ -211,7 +211,30 @@ textarea.field{min-height:5rem;resize:vertical}
 .sheet{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:1.3rem;width:100%;max-width:28rem;margin-bottom:env(safe-area-inset-bottom,0);max-height:85vh;overflow-y:auto}
 .toast{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
   background:var(--text);color:var(--bg);padding:.7rem 1rem;border-radius:12px;max-width:calc(100% - 2rem);z-index:30;font-size:.95rem}
-@media (prefers-reduced-motion:reduce){.record.spin,.card{animation:none}}
+/* Ergänzungen */
+.row2.col{flex-direction:column;align-items:stretch;gap:.45rem}
+.row2.col .seg button{flex:1}
+.seg button{line-height:1.15}
+.search{margin-bottom:.5rem;padding:.6rem .8rem}
+.bigcount{font-family:var(--head);font-weight:800;font-size:2.6rem;line-height:1;min-width:3.4rem;text-align:right}
+.hurry{animation:blink 1s steps(2,start) infinite;color:var(--bad)!important}
+@keyframes blink{50%{opacity:.2}}
+.veil{position:relative}
+.veil.on>.veilbody{filter:blur(9px);pointer-events:none;user-select:none}
+.veilbtn{position:absolute;inset:0;display:grid;place-items:center;background:none;border:0;font-weight:700;color:var(--text);padding:1rem;z-index:2}
+.veilbtn span{background:var(--surface);border:2px solid var(--accent);border-radius:14px;padding:.7rem 1rem;max-width:16rem}
+.prow.right{background:color-mix(in srgb,var(--ok) 20%,var(--surface));box-shadow:inset 5px 0 0 var(--ok)}
+.prow.wrong{background:color-mix(in srgb,var(--bad) 16%,var(--surface));box-shadow:inset 5px 0 0 var(--bad)}
+.prow.right .pn{color:var(--ok)}
+.prow.wrong .pn{color:var(--bad)}
+.lvl{font-size:.78rem;font-weight:600;border:1px solid var(--line);border-radius:999px;padding:.15rem .55rem;color:var(--muted);background:none;white-space:nowrap}
+.lvl.adv{border-color:var(--accent);color:var(--accent)}
+.autobar{margin-top:.8rem;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;position:relative;padding:.6rem .8rem;font-weight:600;text-align:center}
+.autobar .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:color-mix(in srgb,var(--accent) 32%,transparent)}
+.autobar span{position:relative}
+.fixlink{display:block;margin:.4rem auto 0}
+.almost{font-weight:600;font-size:.92rem;margin-top:.25rem}
+@media (prefers-reduced-motion:reduce){.record.spin,.card{animation:none}.hurry{animation:none}}
 </style>
 </head>
 <body>
@@ -222,11 +245,14 @@ textarea.field{min-height:5rem;resize:vertical}
   <h1>P-Quiz</h1>
   <p class="muted">Musikquiz mit deinen eigenen Spotify-Playlists.</p>
   <div class="box stack">
-    <label for="clientId"><strong>Client-ID deiner Spotify-App</strong></label>
-    <input class="field" id="clientId" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="32 Zeichen">
     <button class="btn primary" id="loginBtn">Mit Spotify verbinden</button>
     <button class="link" id="playOnly" style="justify-self:center">Ich will nur mitspielen</button>
     <p class="muted small" id="insecure" hidden>Diese Seite läuft nicht über https. Die Anmeldung funktioniert nur auf deiner GitHub-Pages-Adresse.</p>
+    <details>
+      <summary class="muted small">Andere Spotify-App verwenden</summary>
+      <label for="clientId" style="display:block;margin:.6rem 0 .3rem"><strong>Client-ID</strong></label>
+      <input class="field" id="clientId" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="32 Zeichen">
+    </details>
   </div>
   <div class="box">
     <h2>Redirect-URI</h2>
@@ -258,9 +284,12 @@ textarea.field{min-height:5rem;resize:vertical}
 <section class="screen" id="settings" hidden>
   <div class="topbar"><h1>Musik</h1><button class="link" id="settingsBack">Fertig</button></div>
   <div class="box">
-    <div class="boxhead"><h2>Playlists</h2><button class="link" id="reloadBtn">Neu laden</button></div>
+    <div class="boxhead"><h2>Playlists</h2><button class="link" id="reloadBtn">Aktualisieren</button></div>
+    <input class="field search" id="plSearch" type="search" placeholder="Playlist suchen" autocomplete="off" spellcheck="false">
     <div class="pllist" id="plList"><p class="muted">Playlists werden geladen …</p></div>
     <p class="muted small" id="selInfo" style="margin:.6rem 0 0"></p>
+    <p class="muted small" id="cacheInfo" style="margin:.3rem 0 0"></p>
+    <button class="link" id="cacheClear">Songs komplett neu einlesen</button>
   </div>
   <div class="box">
     <h2 style="margin-bottom:.6rem">Mischungen</h2>
@@ -284,7 +313,8 @@ textarea.field{min-height:5rem;resize:vertical}
 <!-- Bingo-Farben -->
 <section class="screen" id="colors" hidden>
   <div class="topbar"><h1>Bingo-Farben</h1><button class="link" id="colorsBack">Fertig</button></div>
-  <p class="muted" style="margin:0">Tippe eine Farbe an und wähle, was sie abfragt.</p>
+  <p class="muted" style="margin:0 0 .7rem">Tippe eine Farbe an und wähle, was sie abfragt. Wer welche Stufe spielt, legst du im Hauptmenü fest.</p>
+  <div class="seg" id="lvlSeg"><button type="button" data-v="normal" class="on" style="flex:1">Normal</button><button type="button" data-v="adv" style="flex:1">Fortgeschritten</button></div>
   <div class="box" id="colorList"></div>
 </section>
 
@@ -337,6 +367,7 @@ textarea.field{min-height:5rem;resize:vertical}
     <h2 style="margin-bottom:.7rem" id="peopleHead">Noch niemand da</h2>
     <div class="people" id="peopleList"></div>
   </div>
+  <div class="box" id="lobbyLevels" hidden></div>
   <div class="startarea">
     <p class="muted small" id="lobbyInfo" style="margin:0;text-align:center"></p>
     <button class="btn primary" id="lobbyStart">Spiel starten</button>
@@ -358,7 +389,9 @@ textarea.field{min-height:5rem;resize:vertical}
     <p class="status" id="mStatus" aria-live="polite"></p>
   </div>
   <div id="mResult"></div>
+  <div id="mAuto"></div>
   <div class="actions" id="mActions"></div>
+  <div class="row2 first" id="mAutoRow" style="margin-top:.6rem"></div>
   <div class="board" id="mBoard"></div>
 </section>
 
@@ -389,10 +422,12 @@ textarea.field{min-height:5rem;resize:vertical}
       <div class="count" id="pCount"></div>
     </div>
     <div class="st" id="pStatus"></div>
+    <div class="bigcount" id="pBig"></div>
   </div>
   <div id="pWait" class="wait" hidden></div>
   <div class="cards" id="pCards" hidden style="margin-top:.8rem"></div>
   <div id="pResult"></div>
+  <div id="pAuto"></div>
   <div id="pMain"></div>
   <div class="actions" id="pActions"></div>
   <div id="pOthers" style="margin-top:1.2rem"></div>
@@ -484,12 +519,58 @@ function fbFail(e){
 }
 
 /* ---------- Speicher (Präfix pq.) ---------- */
+const SYNC_KEYS = ['rules', 'selected', 'mixes', 'seconds', 'colors', 'colorsAdv', 'tasks', 'levels', 'fixes', 'device'];
 const store = {
   get(k, d){ try{ const v = localStorage.getItem('pq.' + k); return v === null ? d : JSON.parse(v); }catch{ return d; } },
-  set(k, v){ try{ localStorage.setItem('pq.' + k, JSON.stringify(v)); }catch{} },
-  del(k){ try{ localStorage.removeItem('pq.' + k); }catch{} }
+  set(k, v){ let ok = true; try{ localStorage.setItem('pq.' + k, JSON.stringify(v)); }catch{ ok = false; } if (SYNC_KEYS.includes(k)) cloud.touch(); return ok; },
+  del(k){ try{ localStorage.removeItem('pq.' + k); }catch{} if (SYNC_KEYS.includes(k)) cloud.touch(); }
 };
+const DEFAULT_CLIENT_ID = 'c5517ec81bfe42e791bed692f8b22d5b';
+const clientId = () => store.get('clientId', '') || DEFAULT_CLIENT_ID;
 const redirectUri = () => location.origin + location.pathname;
+
+/* Sicherung der Einstellungen in Firebase, verknüpft mit dem Spotify-Konto.
+   Falls der Browser den Speicher löscht, kommen Regeln, Playlists, Mischungen, Aufgaben und Korrekturen nach dem Anmelden zurück. */
+const cloud = {
+  key:null, timer:null, applying:false,
+  touch(){
+    if (cloud.applying || !cloud.key) return;
+    try { localStorage.setItem('pq.settingsAt', String(Date.now())); } catch {}
+    clearTimeout(cloud.timer); cloud.timer = setTimeout(cloud.push, 1200);
+  },
+  data(){ const d = {}; for (const k of SYNC_KEYS) { const v = store.get(k, undefined); if (v !== undefined) d[k] = v; } return d; },
+  push(){ if (cloud.key) FB.set('hosts/' + cloud.key, { at:store.get('settingsAt', 0), data:JSON.stringify(cloud.data()) }).catch(() => {}); },
+  async init(){
+    if (cloud.key || !me || !me.id || cloud.busy) return;
+    cloud.busy = true;
+    try {
+      await FB.start();
+      const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('p-quiz|' + me.id));
+      const key = Array.from(new Uint8Array(h).slice(0, 12), b => b.toString(16).padStart(2, '0')).join('');
+      const v = await FB.get('hosts/' + key);
+      const mine = store.get('settingsAt', 0), theirs = (v && v.at) || 0;
+      if (v && v.data && theirs > mine) {
+        const d = JSON.parse(v.data);
+        cloud.applying = true;
+        for (const k of SYNC_KEYS) { if (d[k] === undefined) store.del(k); else store.set(k, d[k]); }
+        cloud.applying = false;
+        store.set('settingsAt', theirs);
+        cloud.key = key;
+        afterRestore();
+      } else {
+        cloud.key = key;
+        if (!v || mine > theirs) { if (!mine) store.set('settingsAt', Date.now()); cloud.push(); }
+      }
+    } catch (e) { cloud.applying = false; console.warn('Sicherung nicht erreichbar', e); }
+    cloud.busy = false;
+  }
+};
+function afterRestore(){
+  $('#seconds').value = seconds(); $('#secondsOut').textContent = seconds() + ' s';
+  if (!$('#home').hidden) renderHome();
+  if (!$('#settings').hidden) { renderPlaylists(); renderMixes(); renderSelInfo(); }
+  renderMusicInfo(); warmCache();
+}
 
 function show(id){ document.querySelectorAll('.screen').forEach(s => s.hidden = s.id !== id); scrollTo(0, 0); keepAwake(); }
 let toastT;
@@ -513,9 +594,9 @@ function b64url(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))).r
 const randStr = n => b64url(crypto.getRandomValues(new Uint8Array(n)));
 
 async function login(){
-  const cid = $('#clientId').value.trim();
+  const cid = $('#clientId').value.trim() || DEFAULT_CLIENT_ID;
   if (!/^[a-f0-9]{32}$/i.test(cid)) { toast('Die Client-ID hat 32 Zeichen aus Ziffern und den Buchstaben a bis f.'); return; }
-  store.set('clientId', cid);
+  if (cid === DEFAULT_CLIENT_ID) store.del('clientId'); else store.set('clientId', cid);
   const verifier = randStr(48), state = randStr(12);
   const challenge = b64url(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier)));
   store.set('verifier', verifier); store.set('authState', state);
@@ -529,7 +610,7 @@ async function tokenRequest(params){
     method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, body:new URLSearchParams(params)
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error_description || j.error || 'Die Anmeldung bei Spotify ist fehlgeschlagen.');
+  if (!r.ok) throw Object.assign(new Error(j.error_description || j.error || 'Die Anmeldung bei Spotify ist fehlgeschlagen.'), { auth:r.status === 400 || r.status === 401 });
   const old = store.get('token', {}) || {};
   const t = { access:j.access_token, refresh:j.refresh_token || old.refresh, exp:Date.now() + (j.expires_in - 60) * 1000 };
   store.set('token', t);
@@ -542,7 +623,7 @@ async function handleRedirect(){
   if (q.get('error')) { toast('Anmeldung abgebrochen.'); return; }
   if (q.get('state') !== store.get('authState')) { toast('Die Anmeldung passt nicht zu dieser Seite. Bitte nochmal verbinden.'); return; }
   await tokenRequest({ grant_type:'authorization_code', code:q.get('code'), redirect_uri:redirectUri(),
-                       client_id:store.get('clientId'), code_verifier:store.get('verifier') });
+                       client_id:clientId(), code_verifier:store.get('verifier') });
   store.del('verifier'); store.del('authState');
 }
 let refreshing = null;
@@ -551,9 +632,10 @@ async function getToken(force){
   if (!t) throw new AuthError();
   if (force || Date.now() > t.exp) {
     if (!t.refresh) throw new AuthError();
-    refreshing = refreshing || tokenRequest({ grant_type:'refresh_token', refresh_token:t.refresh, client_id:store.get('clientId') })
+    refreshing = refreshing || tokenRequest({ grant_type:'refresh_token', refresh_token:t.refresh, client_id:clientId() })
       .finally(() => { refreshing = null; });
-    try { t = await refreshing; } catch { store.del('token'); throw new AuthError(); }
+    // Nur eine echte Ablehnung durch Spotify meldet ab. Ein Funkloch beim Öffnen behält die Anmeldung.
+    try { t = await refreshing; } catch (e) { if (e && e.auth) { store.del('token'); throw new AuthError(); } throw e; }
   }
   return t.access;
 }
@@ -605,22 +687,29 @@ async function loadPlaylists(){
     while (next) { const page = await api(next); all.push(...((page && page.items) || []).filter(Boolean)); next = page && page.next; }
     playlists = all;
     renderPlaylists(); renderMixes(); renderSelInfo(); renderMusicInfo();
+    if (!$('#home').hidden) renderHome();
+    await cloud.init();
+    warmCache();
   } catch (e) { handleError(e, loadPlaylists); $('#plList').innerHTML = '<p class="muted">Playlists konnten nicht geladen werden.</p>'; }
 }
 function selected(){ return new Set(store.get('selected', [])); }
-function setSelected(set){ store.set('selected', [...set]); renderPlaylists(); renderMixes(); renderSelInfo(); renderMusicInfo(); }
+function setSelected(set){ store.set('selected', [...set]); renderPlaylists(); renderMixes(); renderSelInfo(); renderMusicInfo(); warmCache(); }
 function renderPlaylists(){
   const box = $('#plList'), sel = selected();
   box.innerHTML = '';
   if (!playlists.length) { box.innerHTML = '<p class="muted">Du hast noch keine Playlists.</p>'; return; }
-  const sorted = [...playlists].sort((a, b) => (ownsPl(b) - ownsPl(a)) || a.name.localeCompare(b.name, 'de'));
+  const q = norm($('#plSearch').value);
+  const sorted = [...playlists].sort((a, b) => (sel.has(b.id) - sel.has(a.id)) || (ownsPl(b) - ownsPl(a)) || a.name.localeCompare(b.name, 'de'))
+    .filter(p => !q || norm(p.name).includes(q));
+  if (!sorted.length) { box.innerHTML = '<p class="muted">Keine Playlist passt zur Suche.</p>'; return; }
   for (const p of sorted) {
     const own = ownsPl(p);
     const row = el('label', 'pl' + (own ? '' : ' foreign'));
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.disabled = !own; cb.checked = own && sel.has(p.id);
     cb.onchange = () => { const s = selected(); cb.checked ? s.add(p.id) : s.delete(p.id); setSelected(s); };
     const box2 = el('div');
-    box2.append(txt('div', 'name', p.name), txt('div', 'meta', own ? plTotal(p) + ' Songs' : 'Gehört dir nicht. In eine eigene Playlist kopieren, dann ist sie wählbar.'));
+    const c = own && cacheFresh(p) ? ', gespeichert' : '';
+    box2.append(txt('div', 'name', p.name), txt('div', 'meta', own ? plTotal(p) + ' Songs' + c : 'Gehört dir nicht. In eine eigene Playlist kopieren, dann ist sie wählbar.'));
     row.append(cb, box2); box.append(row);
   }
 }
@@ -633,7 +722,11 @@ function selectionText(){
   const n = playlists.filter(p => ids.includes(p.id)).reduce((s, p) => s + plTotal(p), 0);
   return ids.length ? ids.length + (ids.length === 1 ? ' Playlist' : ' Playlists') + ' mit zusammen ' + n + ' Songs' : '';
 }
-function renderSelInfo(){ $('#selInfo').textContent = selectionText() ? selectionText() + ' gewählt' : 'Wähle mindestens eine Playlist.'; }
+function renderSelInfo(){
+  $('#selInfo').textContent = selectionText() ? selectionText() + ' gewählt' : 'Wähle mindestens eine Playlist.';
+  const ids = validSelection(), fresh = ids.filter(id => cacheFresh(playlists.find(p => p.id === id))).length;
+  $('#cacheInfo').textContent = !ids.length ? '' : fresh === ids.length ? 'Alle Songs sind gespeichert, das Spiel startet ohne Ladezeit.' : warming ? 'Songs werden im Hintergrund eingelesen …' : (ids.length - fresh) + ' Playlist(s) werden beim Start eingelesen.';
+}
 function renderMusicInfo(){
   const d = store.get('device', null);
   const parts = [playlists.length ? (selectionText() || 'Noch keine Playlist gewählt') : 'Playlists werden geladen …', 'Hörzeit ' + seconds() + ' s'];
@@ -707,27 +800,83 @@ function toCard(t){
   return { uri:t.uri, title:t.name, artist:(t.artists || []).map(a => a.name).join(', '),
            album:al.name || '', year:(al.release_date || '').slice(0, 4) || '?', duration:t.duration_ms || 0 };
 }
+/* Zwischenspeicher: jede Playlist wird nur einmal komplett eingelesen.
+   Ändert sich die Playlist bei Spotify, werden nur die neu angehängten Songs nachgeladen. */
+const songKey = (title, artist) => norm(cleanTitle(title)) + '|' + norm(String(artist || '').split(', ')[0]);
+const pcVersion = p => p.snapshot_id || ('n' + plTotal(p));
+const packCard = c => [c.uri.replace('spotify:track:', ''), c.title, c.artist, c.album, c.year, c.duration];
+const unpackCard = a => ({ uri:'spotify:track:' + a[0], title:a[1], artist:a[2], album:a[3], year:a[4], duration:a[5], k:songKey(a[1], a[2]) });
+function cacheGet(id){ return store.get('pc.' + id, null); }
+function cacheFresh(p){ const c = cacheGet(p.id); return !!(c && c.v === pcVersion(p)); }
+function cachePut(id, obj){
+  if (store.set('pc.' + id, obj)) return;
+  // Speicher voll: alte Playlists rauswerfen, die gerade nicht gewählt sind
+  const keep = new Set(selected());
+  try { Object.keys(localStorage).filter(k => k.startsWith('pq.pc.') && !keep.has(k.slice(6))).forEach(k => localStorage.removeItem(k)); } catch {}
+  store.set('pc.' + id, obj);
+}
+const loading = new Map();
+function playlistCards(id, onProgress){
+  let job = loading.get(id);
+  if (!job) {
+    job = { say:onProgress };
+    job.promise = readPlaylist(id, t => job.say && job.say(t)).finally(() => loading.delete(id));
+    loading.set(id, job);
+  } else if (onProgress) job.say = onProgress;
+  return job.promise;
+}
+async function readPlaylist(id, onProgress){
+  const p = playlists.find(x => x.id === id), name = p ? '„' + p.name + '“' : 'Playlist';
+  const c = cacheGet(id);
+  if (c && p && c.v === pcVersion(p)) return c.cards.map(unpackCard);
+  let cards = [], raw = 0;
+  if (c && p && plTotal(p) > c.raw) { cards = c.cards.map(unpackCard); raw = c.raw; }
+  const isNew = raw > 0;
+  let next = '/playlists/' + id + '/items?limit=50&offset=' + raw + '&market=from_token';
+  while (next) {
+    onProgress && onProgress((isNew ? 'Neue Songs aus ' : 'Lese ') + name + ' ein … ' + (isNew ? '' : raw + (p ? ' von ' + plTotal(p) : '')));
+    const page = await api(next);
+    for (const e of (page && page.items) || []) {
+      raw++;
+      const t = e && (e.item || e.track);
+      if (!t || t.type !== 'track' || t.is_local || !t.uri || t.is_playable === false) continue;
+      const card = toCard(t); card.k = songKey(card.title, card.artist);
+      cards.push(card);
+    }
+    next = page && page.next;
+  }
+  if (p) cachePut(id, { v:pcVersion(p), raw, cards:cards.map(packCard) });
+  return cards;
+}
+let warming = false;
+async function warmCache(){
+  if (warming || !playlists.length) return;
+  warming = true;
+  if (!$('#settings').hidden) renderSelInfo();
+  try {
+    for (const id of validSelection()) {
+      const p = playlists.find(x => x.id === id);
+      if (p && !cacheFresh(p)) { try { await playlistCards(id); } catch (e) { if (e instanceof AuthError) throw e; } }
+    }
+  } catch {}
+  warming = false;
+  if (!$('#settings').hidden) { renderPlaylists(); renderSelInfo(); }
+}
 async function buildDeck(ids, onProgress){
-  const keys = new Set(), cards = [];
+  const keys = new Set(), cards = [], fixes = store.get('fixes', {});
   for (let i = 0; i < ids.length; i++) {
     const p = playlists.find(x => x.id === ids[i]);
-    onProgress && onProgress('Lade ' + (p ? '„' + p.name + '“' : 'Playlist') + ' (' + (i + 1) + ' von ' + ids.length + ') …');
-    let next = '/playlists/' + ids[i] + '/items?limit=50&market=from_token';
-    try {
-      while (next) {
-        const page = await api(next);
-        for (const e of (page && page.items) || []) {
-          const t = e && (e.item || e.track);
-          if (!t || t.type !== 'track' || t.is_local || !t.uri || t.is_playable === false) continue;
-          const key = norm(cleanTitle(t.name)) + '|' + norm(t.artists && t.artists[0] && t.artists[0].name);
-          if (keys.has(key)) continue;
-          keys.add(key); cards.push(toCard(t));
-        }
-        next = page && page.next;
-      }
-    } catch (e) {
+    let list;
+    try { list = await playlistCards(ids[i], t => onProgress && onProgress(t + (ids.length > 1 ? ' (' + (i + 1) + ' von ' + ids.length + ')' : ''))); }
+    catch (e) {
       if (e instanceof ApiError && (e.status === 403 || e.status === 404)) { toast('„' + (p ? p.name : 'Eine Playlist') + '“ wurde übersprungen, Spotify gibt ihre Songs nicht heraus.'); continue; }
       throw e;
+    }
+    for (const c of list) {
+      if (keys.has(c.k)) continue;
+      keys.add(c.k);
+      if (fixes[c.k]) c.year = String(fixes[c.k]);
+      cards.push(c);
     }
   }
   return shuffle(cards);
@@ -752,17 +901,19 @@ async function resolveDevice(){
   return d.id;
 }
 const isSkippable = e => e instanceof ApiError && (e.status === 400 || (e.status === 403 && e.reason !== 'PREMIUM_REQUIRED'));
-const clip = { token:0, timer:null };
+const clip = { token:0, timer:null, on:false };
 async function pauseMusic(){ try { await api('/me/player/pause', { method:'PUT' }); } catch (e) { if (e instanceof AuthError) handleError(e); } }
-async function playClip(card, onEnd){
+async function playClip(card, onEnd, endless){
   const tok = ++clip.token; clearTimeout(clip.timer);
   const dev = await resolveDevice();
   try {
     await api('/me/player/play?device_id=' + encodeURIComponent(dev), { method:'PUT', body:JSON.stringify({ uris:[card.uri], position_ms:card.start || 0 }) });
   } catch (e) { if (isSkippable(e)) throw new SkipError(); throw e; }
   if (tok !== clip.token) return null;
+  clip.on = true;
+  if (endless) return { tok, dur:0 };
   const dur = seconds() * 1000;
-  clip.timer = setTimeout(() => { if (tok === clip.token) { clip.token++; pauseMusic(); onEnd(); } }, dur);
+  clip.timer = setTimeout(() => { if (tok === clip.token) { clip.token++; clip.on = false; pauseMusic(); onEnd(); } }, dur);
   return { tok, dur };
 }
 async function clipRunsFine(card, tok){
@@ -773,7 +924,7 @@ async function clipRunsFine(card, tok){
   if (tok !== clip.token) return true;
   return !!(st && st.item && (st.item.uri === card.uri || st.item.name === card.title) && st.is_playing !== false);
 }
-function stopClip(){ clip.token++; clearTimeout(clip.timer); pauseMusic(); }
+function stopClip(){ clip.token++; clearTimeout(clip.timer); pauseMusic(); clip.on = false; }
 
 /* ---------- Aufgaben ---------- */
 const COLORS = [
@@ -806,15 +957,20 @@ const BUILTIN = [
   { id:'d3', name:'Abstand der Songs ± 3 Jahre', kind:'two', two:{ k:'diff', tol:3 } },
   { id:'d4', name:'Abstand der Songs ± 4 Jahre', kind:'two', two:{ k:'diff', tol:4 } }
 ];
-const DEFAULT_COLORS = ['dec', 'tk', 'older', 'y2', 'y0'];
+const DEFAULT_COLORS = { normal:['dec', 'tk', 'older', 'y2', 'y0'], adv:['half', 'tka', 'd2', 'y1', 'y0'] };
+const COLOR_KEY = { normal:'colors', adv:'colorsAdv' };
+const LEVEL_NAMES = { normal:'Normal', adv:'Fortgeschritten' };
 const customTasks = () => store.get('tasks', []);
 const allTasks = () => [...BUILTIN, ...customTasks()];
 const taskById = id => allTasks().find(t => t.id === id) || BUILTIN[0];
-function colorTasks(){
-  const ids = store.get('colors', DEFAULT_COLORS).slice(0, 5);
+function colorTasks(lvl){
+  lvl = lvl === 'adv' ? 'adv' : 'normal';
+  const def = DEFAULT_COLORS[lvl], ids = store.get(COLOR_KEY[lvl], def).slice(0, 5);
   const known = new Set(allTasks().map(t => t.id));
-  return DEFAULT_COLORS.map((d, i) => known.has(ids[i]) ? ids[i] : d);
+  return def.map((d, i) => known.has(ids[i]) ? ids[i] : d);
 }
+const levels = () => store.get('levels', {});
+const levelOf = k => levels()[k] === 'adv' ? 'adv' : 'normal';
 const decadeOf = y => y < 1960 ? 'vor 1960' : Math.floor(y / 10) * 10 + 'er';
 const halfOf = y => { if (y < 1960) return 'vor 1960'; const s = Math.floor(y / 5) * 5; return s + '–' + String(s + 4).slice(2); };
 const DECADES = ['vor 1960', '1960er', '1970er', '1980er', '1990er', '2000er', '2010er', '2020er'];
@@ -831,10 +987,31 @@ function needsInput(task, check){
   if (task.kind === 'free') return false;
   return task.parts.some(p => !(check === 'self' && (p.k === 'title' || p.k === 'artist')));
 }
-function normTxt(s){
-  return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s[-–]\s.*$/, '').replace(/[(\[].*?[)\]]/g, '').replace(/\b(feat|ft|featuring)\b.*$/, '')
-    .replace(/&/g, ' and ').replace(/\bund\b/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim().replace(/^(the|die|der|das) /, '');
+/* Titel und Künstler vergleichen.
+   Zusätze wie „- Remastered 2011“, „- Single Version“, „(feat. …)“ oder „[Live]“ gehören nicht zum Titel.
+   Groß- und Kleinschreibung, Satzzeichen, Leerzeichen und Akzente zählen nie. */
+const stripExtras = s => String(s || '').replace(/\s+[-–—]\s+.*$/, '').replace(/\s*[(\[][^)\]]*[)\]]/g, '').replace(/\s+(feat|ft|featuring)\.?\s.*$/i, '').trim();
+const canon = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ß/g, 'ss')
+  .replace(/&/g, ' and ').replace(/\bund\b/g, ' and ').replace(/[^a-z0-9]+/g, '');
+function titleTargets(t){
+  const a = stripExtras(t), b = String(t || '').replace(/\s+[-–—]\s+.*$/, '').replace(/\s+(feat|ft|featuring)\.?\s.*$/i, '');
+  return [...new Set([a, b].map(canon).filter(Boolean))];
+}
+function artistTargets(a){
+  const all = [a, ...String(a || '').split(/,\s*/)];
+  return [...new Set(all.flatMap(x => [x, String(x).replace(/^\s*the\s+/i, '')]).map(canon).filter(Boolean))];
+}
+const allowedTypos = n => n < 4 ? 0 : n <= 8 ? 1 : n <= 14 ? 2 : 3;
+// 2 = genau richtig, 1 = mit kleinen Tippfehlern richtig, 0 = falsch
+function matchLevel(ans, targets){
+  const cand = [...new Set([canon(ans), canon(stripExtras(ans))].filter(Boolean))];
+  let best = 0;
+  for (const a of cand) for (const t of targets) {
+    if (a === t) return 2;
+    const n = allowedTypos(t.length);
+    if (n && Math.abs(a.length - t.length) <= n && lev(a, t) <= n) best = 1;
+  }
+  return best;
 }
 function lev(a, b){
   const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
@@ -846,38 +1023,34 @@ function lev(a, b){
   }
   return prev[n];
 }
-function close(ans, target){
-  const a = normTxt(ans).replace(/ /g, ''), t = normTxt(target).replace(/ /g, '');
-  if (!a || !t) return false;
-  if (a === t) return true;
-  if (1 - lev(a, t) / Math.max(a.length, t.length) >= 0.8) return true;
-  return a.length >= 4 && t.includes(a) && a.length / t.length >= 0.5;
-}
-const artistOk = (ans, artists) => close(ans, artists) || String(artists || '').split(/,\s*/).some(x => close(ans, x));
+// Ergebnis: { ok:true|false|null (null = Selbstbewertung fehlt), almost:true wenn nur mit Tippfehlern richtig }
 function evalTask(task, check, ans, cards, self){
   ans = ans || {}; self = self || {};
+  const out = (ok, almost) => ({ ok, almost:ok === true && !!almost });
   const y1 = parseInt(cards[0].year, 10);
-  if (task.kind === 'free') return self.free === undefined ? null : !!self.free;
+  if (task.kind === 'free') return out(self.free === undefined ? null : !!self.free);
   if (task.kind === 'two') {
     const y2 = parseInt(cards[1].year, 10), k = task.two.k;
-    if (k === 'diff') { const v = parseInt(ans.diff, 10); return !isNaN(v) && Math.abs(v - Math.abs(y1 - y2)) <= (task.two.tol || 0); }
-    if (ans.pick !== '1' && ans.pick !== '2') return false;
-    if (y1 === y2) return true;
+    if (k === 'diff') { const v = parseInt(ans.diff, 10); return out(!isNaN(v) && Math.abs(v - Math.abs(y1 - y2)) <= (task.two.tol || 0)); }
+    if (ans.pick !== '1' && ans.pick !== '2') return out(false);
+    if (y1 === y2) return out(true);
     const olderIs = y1 < y2 ? '1' : '2';
-    return k === 'older' ? ans.pick === olderIs : ans.pick !== olderIs;
+    return out(k === 'older' ? ans.pick === olderIs : ans.pick !== olderIs);
   }
+  const typed = got => check === 'fuzzy' ? got : got === 2 ? 2 : 0;
+  const selfV = v => v === undefined ? null : v ? 2 : 0;
   const res = task.parts.map(p => {
     switch (p.k) {
-      case 'year': { const v = parseInt(ans.year, 10); return !isNaN(v) && Math.abs(v - y1) <= (p.tol || 0); }
-      case 'decade': return ans.decade === decadeOf(y1);
-      case 'half': return ans.half === halfOf(y1);
-      case 'title': return check === 'self' ? (self.title === undefined ? null : !!self.title) : close(ans.title, cards[0].title);
-      case 'artist': return check === 'self' ? (self.artist === undefined ? null : !!self.artist) : artistOk(ans.artist, cards[0].artist);
+      case 'year': { const v = parseInt(ans.year, 10); return !isNaN(v) && Math.abs(v - y1) <= (p.tol || 0) ? 2 : 0; }
+      case 'decade': return ans.decade === decadeOf(y1) ? 2 : 0;
+      case 'half': return ans.half === halfOf(y1) ? 2 : 0;
+      case 'title': return check === 'self' ? selfV(self.title) : typed(matchLevel(ans.title, titleTargets(cards[0].title)));
+      case 'artist': return check === 'self' ? selfV(self.artist) : typed(matchLevel(ans.artist, artistTargets(cards[0].artist)));
     }
-    return false;
+    return 0;
   });
-  if (task.join === 'or') return res.some(r => r === true) ? true : res.some(r => r === null) ? null : false;
-  return res.some(r => r === false) ? false : res.some(r => r === null) ? null : true;
+  if (task.join === 'or') return res.includes(2) ? out(true) : res.includes(1) ? out(true, true) : res.includes(null) ? out(null) : out(false);
+  return res.includes(0) ? out(false) : res.includes(null) ? out(null) : out(true, res.includes(1));
 }
 function saidText(task, ans){
   if (!ans) return '';
@@ -926,6 +1099,9 @@ function buildAnswerForm(task, check, box, opts = {}){
       if (p.k === 'artist') { if (check === 'self') sayIt('den Künstler'); else field('Künstler', textIn('artist', 'Name')); }
     }
     if (task.parts.length > 1) form.append(txt('p', 'hint', task.join === 'or' ? 'Eins von beiden richtig reicht.' : 'Beides muss stimmen.'));
+    if (check !== 'self' && task.parts.some(p => p.k === 'title' || p.k === 'artist'))
+      form.append(txt('p', 'hint', check === 'fuzzy' ? 'Kleine Tippfehler sind erlaubt.' : 'Zusätze wie „Remastered“ oder „Single Version“ musst du nicht eintippen.'));
+    if (opts.songOne) form.append(txt('p', 'hint', 'Gemeint ist Song 1.'));
   }
   box.append(form);
   return { val, form };
@@ -944,10 +1120,24 @@ const LINES = (() => {
   L.push([0, 6, 12, 18, 24], [4, 8, 12, 16, 20]);
   return L;
 })();
-const bingoWon = (marks, win) => win === 'full' ? marks.every(Boolean) : LINES.some(l => l.every(i => marks[i]));
+const ROWS = [0, 1, 2, 3, 4].map(r => [0, 1, 2, 3, 4].map(c => r * 5 + c));
+const COLS = [0, 1, 2, 3, 4].map(c => [0, 1, 2, 3, 4].map(r => r * 5 + c));
+const WIN_NAMES = { line:'Eine Reihe', cross:'Quer + längs', full:'Volle Karte' };
+function bingoWon(marks, win){
+  marks = marks || [];
+  const full = l => l.every(i => marks[i]);
+  if (win === 'full') return marks.length === 25 && marks.every(Boolean);
+  if (win === 'cross') return ROWS.some(full) && COLS.some(full);
+  return LINES.some(full);
+}
 function bingoMissing(marks, win){
   marks = marks || [];
   if (win === 'full') return 25 - marks.filter(Boolean).length;
+  if (win === 'cross') {
+    let best = 25;
+    for (const r of ROWS) for (const c of COLS) best = Math.min(best, new Set([...r, ...c].filter(i => !marks[i])).size);
+    return best;
+  }
   return Math.min(...LINES.map(l => l.filter(i => !marks[i]).length));
 }
 
@@ -958,9 +1148,41 @@ const MODES = {
   bingo:{ name:'Bingo', desc:'Eine Farbe bestimmt, was zum Song erraten wird.' },
   solo:{ name:'Ohne Mitspieler', desc:'Nur Karte ziehen, hören und umdrehen.' }
 };
-const DEFAULT_RULES = { mode:'turns', target:10, placeSecs:15, answerSecs:30, win:'line', check:'auto' };
-const rules = () => ({ ...DEFAULT_RULES, ...store.get('rules', {}) });
+const DEFAULT_RULES = { mode:'turns', target:10, placeSecs:15, answerSecs:30, win:'line', check:'exact', auto:false };
+const PLACE_SECS = [5, 10, 15, 20, 25, 30];
+function rules(){
+  const r = { ...DEFAULT_RULES, ...store.get('rules', {}) };
+  if (r.check === 'auto' || !['exact', 'fuzzy', 'self'].includes(r.check)) r.check = 'exact';
+  if (!PLACE_SECS.includes(r.placeSecs)) r.placeSecs = Math.min(30, Math.max(5, Math.round((Number(r.placeSecs) || 15) / 5) * 5));
+  if (!WIN_NAMES[r.win]) r.win = 'line';
+  if (!MODES[r.mode]) r.mode = 'turns';
+  r.auto = !!r.auto;
+  return r;
+}
 const setRule = (k, v) => { store.set('rules', { ...rules(), [k]:v }); renderHome(); if (!M) pushState(); };
+function setLevel(k, v){
+  store.set('levels', { ...levels(), [k]:v });
+  if (M && M.pl[k]) {
+    const p = M.pl[k];
+    // Während einer laufenden Bingo-Runde gilt die neue Stufe erst ab der nächsten Runde
+    if (M.mode === 'bingo' && M.round && !['ready', 'over'].includes(M.phase)) {
+      if (v === p.lvl) delete p.lvlNext; else { p.lvlNext = v; toast(p.name + ' spielt ab der nächsten Runde ' + LEVEL_NAMES[v] + '.'); }
+    } else { p.lvl = v; delete p.lvlNext; }
+    saveMatch(); pushState(); renderMatch();
+  }
+  if (!$('#home').hidden) renderHome();
+  if (!$('#lobby').hidden) drawLobby();
+}
+function drawLevels(box){
+  box.append(Object.assign(txt('h2', '', 'Schwierigkeit'), { style:'margin:1rem 0 .3rem' }));
+  const seen = new Set(), list = playerList(room.players).filter(([, p]) => p.online !== false && !seen.has(nameKey(p.name)) && seen.add(nameKey(p.name)));
+  if (!list.length) { box.append(txt('p', 'muted small', 'Sobald Spieler im Spielraum sind, legst du hier fest, wer Normal und wer Fortgeschritten spielt.')); return; }
+  list.forEach(([, p], i) => {
+    const k = nameKey(p.name), row = el('div', 'row2' + (i ? '' : ' first')), g = el('div', 'seg');
+    for (const v of ['normal', 'adv']) { const b = txt('button', levelOf(k) === v ? 'on' : '', LEVEL_NAMES[v]); b.type = 'button'; b.onclick = () => setLevel(k, v); g.append(b); }
+    row.append(txt('span', '', p.name), g); box.append(row);
+  });
+}
 const running = () => !!(M && M.phase !== 'over');
 
 function openHome(){
@@ -988,29 +1210,41 @@ function renderHome(){
     s.value = String(r[key]); s.onchange = () => setRule(key, Number(s.value));
     row.append(txt('span', '', label), s); box.append(row);
   };
-  const seg = (label, key, opts) => {
+  const seg = (label, key, opts, col) => {
     const row = rowEl(), g = el('div', 'seg');
+    if (col) row.classList.add('col');
     for (const [v, t] of opts) { const b = txt('button', r[key] === v ? 'on' : '', t); b.type = 'button'; b.onclick = () => setRule(key, v); g.append(b); }
     row.append(txt('span', '', label), g); box.append(row);
   };
   if (r.mode === 'turns' || r.mode === 'together') sel('Karten zum Sieg', 'target', Array.from({ length:18 }, (_, i) => i + 3));
-  if (r.mode === 'together') sel('Zeit zum Einordnen', 'placeSecs', [5, 10, 15, 20, 30, 45, 60], v => v + ' s');
+  if (r.mode === 'together') sel('Zeit zum Einordnen', 'placeSecs', PLACE_SECS, v => v + ' s');
   if (r.mode === 'bingo') {
-    seg('Gewinn', 'win', [['line', 'Eine Reihe'], ['full', 'Volle Karte']]);
-    seg('Titel, Künstler', 'check', [['auto', 'Eintippen'], ['self', 'Selbst']]);
+    seg('Gewinn', 'win', Object.entries(WIN_NAMES), true);
+    seg('Titel und Künstler', 'check', [['exact', 'Eintippen'], ['fuzzy', 'Eintippen ungenau'], ['self', 'Selbst']], true);
     sel('Zeit zum Antworten', 'answerSecs', [10, 15, 20, 30, 45, 60, 90], v => v + ' s');
+  }
+  seg('Nach dem Aufdecken', 'auto', [[false, 'Selbst weiter'], [true, 'Automatisch']], true);
+  if (r.mode === 'bingo') {
     const b = el('button', 'linkrow'); b.type = 'button';
     const sw = el('span', 'swatches'); COLORS.forEach(c => { const d = el('span', 'sw'); d.style.background = c.bg; sw.append(d); });
     b.append(txt('span', '', 'Farben und Aufgaben'), sw); b.onclick = openColors; box.append(b);
+    drawLevels(box);
   }
-  if (r.mode === 'turns' || r.mode === 'together') box.append(txt('p', 'muted small', 'Ein gleiches Jahr wie die Nachbarkarte zählt als richtig.'));
-  if (r.mode === 'together') box.lastChild.textContent += ' Erreichen mehrere in derselben Runde das Ziel, gewinnen sie gemeinsam.';
-  if (r.mode === 'solo') box.append(txt('p', 'muted small', 'Keine Regeln. Du ziehst Karten, hörst und drehst um.'));
+  const hints = {
+    turns:'Der Song läuft, bis eingeordnet ist. Ein gleiches Jahr wie die Nachbarkarte zählt als richtig.',
+    together:'Aufgedeckt wird, wenn die Zeit um ist. Ein gleiches Jahr wie die Nachbarkarte zählt als richtig. Erreichen mehrere in derselben Runde das Ziel, gewinnen sie gemeinsam.',
+    bingo:r.check === 'exact' ? 'Eintippen: Der Titel muss stimmen, Zusätze wie „Remastered“ zählen nicht.' : r.check === 'fuzzy' ? 'Eintippen ungenau: Kleine Tippfehler wie „Diorr 2001“ zählen noch als richtig.' : 'Selbst: Titel und Künstler sagt man laut und bewertet sich danach selbst.',
+    solo:'Keine Regeln. Du ziehst Karten, hörst und drehst um.'
+  };
+  if (r.auto) hints[r.mode] += ' Automatisch: 5 Sekunden nach dem Aufdecken startet die nächste Karte.';
+  box.append(Object.assign(txt('p', 'muted small', hints[r.mode]), { style:'margin:.7rem 0 0' }));
   const on = room.code ? onlineKeys().size : 0;
   $('#goBtn').textContent = r.mode === 'solo' ? 'Spiel starten' : on ? 'Spiel starten mit ' + on + (on === 1 ? ' Spieler' : ' Spielern') : room.code ? 'Spielraum ' + room.code + ' öffnen' : 'Spielraum öffnen';
   $('#showRoomBtn').hidden = !room.code || r.mode === 'solo' || !on;
   $('#showRoomBtn').textContent = 'Spielraum ' + (room.code || '') + ' mit QR-Code zeigen';
-  const saved = store.get('match', null), rb = $('#resumeBtn');
+  let saved = store.get('match', null);
+  if (saved && (Array.isArray(saved.colors) || !MODES[saved.mode])) { store.del('match'); saved = null; }
+  const rb = $('#resumeBtn');
   rb.hidden = !(saved && saved.phase !== 'over' && saved.deck && saved.deck.cards && saved.deck.cards.length);
   if (!rb.hidden) rb.textContent = 'Weiterspielen: ' + MODES[saved.mode].name + ', Runde ' + saved.round;
 }
@@ -1020,11 +1254,12 @@ function goFromHome(){
 }
 
 /* ---------- Bingo-Farben, Aufgabenauswahl, Baukasten ---------- */
-let pickColor = 0;
+let pickColor = 0, pickLevel = 'normal';
 function openColors(){
   show('colors');
+  document.querySelectorAll('#lvlSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === pickLevel));
   const box = $('#colorList'); box.innerHTML = '';
-  const ids = colorTasks();
+  const ids = colorTasks(pickLevel);
   COLORS.forEach((c, i) => {
     const b = el('button', 'colorrow'); b.type = 'button';
     const sw = el('span', 'sw'); sw.style.background = c.bg;
@@ -1035,15 +1270,15 @@ function openColors(){
 }
 function openPicker(ci){
   pickColor = ci; show('picker');
-  $('#pickTitle').textContent = 'Aufgabe für ' + COLORS[ci].name;
+  $('#pickTitle').textContent = COLORS[ci].name + (pickLevel === 'adv' ? ', Fortgeschr.' : ', Normal');
   const box = $('#pickList'); box.innerHTML = '';
-  const ids = colorTasks();
+  const ids = colorTasks(pickLevel), used = new Set([...colorTasks('normal'), ...colorTasks('adv')]);
   const row = t => {
     const at = ids.indexOf(t.id);
     const b = el('button', 'pick' + (at === ci ? ' cur' : '')); b.type = 'button';
     b.append(txt('span', 'pn', (at === ci ? '✓ ' : '') + t.name));
     if (at >= 0 && at !== ci) b.append(txt('span', 'pt', 'bei ' + COLORS[at].name));
-    if (t.id.startsWith('c') && at < 0) {
+    if (t.id.startsWith('c') && !used.has(t.id)) {
       const d = txt('span', 'del', '×'); d.setAttribute('role', 'button'); d.setAttribute('aria-label', t.name + ' löschen');
       d.onclick = ev => { ev.stopPropagation(); if (confirm('„' + t.name + '“ löschen?')) { store.set('tasks', customTasks().filter(x => x.id !== t.id)); openPicker(ci); } };
       b.append(d);
@@ -1055,10 +1290,11 @@ function openPicker(ci){
   const cust = customTasks();
   if (cust.length) { box.append(txt('div', 'sub', 'Eigene Aufgaben')); cust.forEach(row); }
 }
-function assignTask(ci, id){
-  const ids = colorTasks(), other = ids.indexOf(id);
+function assignTask(ci, id, lvl){
+  lvl = lvl || pickLevel;
+  const ids = colorTasks(lvl), other = ids.indexOf(id);
   if (other >= 0 && other !== ci) ids[other] = ids[ci];
-  ids[ci] = id; store.set('colors', ids);
+  ids[ci] = id; store.set(COLOR_KEY[lvl], ids);
 }
 const builder = { kind:'one', join:'and' };
 function fillTol(s){ s.innerHTML = ''; for (let i = 0; i <= 10; i++) { const o = el('option'); o.value = i; o.textContent = i ? '± ' + i : 'genau'; s.append(o); } }
@@ -1111,12 +1347,12 @@ function saveBuilder(){
   t.id = 'c' + Date.now().toString(36);
   store.set('tasks', [...customTasks(), t]);
   assignTask(pickColor, t.id);
-  toast('„' + t.name + '“ gespeichert und ' + COLORS[pickColor].name + ' zugewiesen.');
+  toast('„' + t.name + '“ gespeichert und ' + COLORS[pickColor].name + ' (' + LEVEL_NAMES[pickLevel] + ') zugewiesen.');
   openColors();
 }
 
 /* ---------- Spielraum am Haupthandy ---------- */
-const room = { code:null, players:{}, unsub:null, aunsub:null, seen:{} };
+const room = { code:null, players:{}, unsub:null, aunsub:null, seen:{}, loaded:false };
 async function ensureRoom(){
   if (room.code) return room.code;
   await FB.start();
@@ -1133,7 +1369,7 @@ async function ensureRoom(){
   room.code = code; store.set('room', code);
   if (room.unsub) room.unsub();
   if (room.aunsub) room.aunsub();
-  room.unsub = FB.on('rooms/' + code + '/players', v => { room.players = v || {}; tidyPlayers(); syncPlayers(); drawLobby(); if (!$('#home').hidden) renderHome(); });
+  room.unsub = FB.on('rooms/' + code + '/players', v => { room.players = v || {}; room.loaded = true; tidyPlayers(); syncPlayers(); drawLobby(); if (!$('#home').hidden) renderHome(); });
   room.aunsub = FB.on('rooms/' + code + '/actions', v => onActions(v || {}));
   pushState();
   return code;
@@ -1188,6 +1424,9 @@ function drawLobby(){
   drawPeople($('#peopleList'), room.players);
   $('#lobbyInfo').textContent = !running() && !on ? 'Sobald jemand beigetreten ist, kannst du starten.' : '';
   const t = $('#toLobby'); t.hidden = false; t.textContent = 'Raum ' + room.code + ' (' + on + ')';
+  const lv = $('#lobbyLevels'), mode = running() ? M.mode : rules().mode;
+  lv.hidden = mode !== 'bingo' || !on;
+  if (!lv.hidden) { lv.innerHTML = ''; drawLevels(lv); lv.firstChild.style.marginTop = '0'; }
 }
 function lobbyStart(){
   if (running()) { show('mgame'); renderMatch(); pushState(); return; }
@@ -1200,7 +1439,7 @@ async function closeRoom(){
   const code = room.code;
   if (room.unsub) room.unsub();
   if (room.aunsub) room.aunsub();
-  Object.assign(room, { code:null, players:{}, unsub:null, aunsub:null, seen:{} });
+  Object.assign(room, { code:null, players:{}, unsub:null, aunsub:null, seen:{}, loaded:false });
   store.del('room'); $('#toLobby').hidden = true;
   try { await FB.remove('rooms/' + code); } catch {}
   openHome();
@@ -1210,9 +1449,17 @@ async function closeRoom(){
 let M = null;
 let tickT = null;
 const RING = 2 * Math.PI * 46;
+const AUTO_SECS = 5;
 const saveMatch = () => { if (M) store.set('match', M); };
-const newPlayer = name => ({ name, line:[], placed:null, result:null, ans:null, self:null, answered:false, said:'', grid:null, marks:null, canMark:null });
+const newPlayer = (name, k) => ({ name, lvl:levelOf(k), line:[], placed:null, result:null, almost:false, ans:null, self:null, answered:false, said:'',
+                                  grid:null, marks:null, canMark:null, markIdx:null, markRound:0 });
 const lineCard = c => ({ y:parseInt(c.year, 10), t:c.title, a:c.artist });
+const taskFor = p => M && M.tasks ? M.tasks[p && p.lvl === 'adv' ? 'adv' : 'normal'] : null;
+function levelsInPlay(){
+  const on = onlineKeys();
+  const s = new Set(Object.entries(M.pl).filter(([k]) => on.has(k)).map(([, p]) => p.lvl === 'adv' ? 'adv' : 'normal'));
+  return s.size ? [...s].sort().reverse() : ['normal'];
+}
 function takeCard(){
   const d = M.deck;
   if (!d.cards.length) return null;
@@ -1227,15 +1474,31 @@ function dropCard(c){
 function syncPlayers(){
   if (!M || M.mode === 'solo' || M.phase === 'loading' && !M.deck.cards.length) { if (M && !$('#mgame').hidden) renderMatch(); return; }
   let changed = false;
+  // Wer den Spielraum verlassen hat, verschwindet aus dem Spiel und aus allen Listen
+  const present = new Set(playerList(room.players).map(([, p]) => nameKey(p.name)));
+  if (room.loaded) for (const k of Object.keys(M.pl)) {
+    if (present.has(k)) continue;
+    if (M.mode === 'turns' && M.turn === k) {
+      const nt = nextTurn(k, false);
+      M.turn = nt === k ? null : nt;
+      if (['loading', 'playing', 'placing'].includes(M.phase)) { stopClip(); M.phase = 'ready'; M.revealed = false; M.cards = []; M.timer = null; M.round = Math.max(0, M.round - 1); }
+    }
+    if (M.lastTurn === k) M.lastTurn = null;
+    delete M.pl[k];
+    M.order = M.order.filter(x => x !== k);
+    M.winners = M.winners.filter(x => x !== k);
+    changed = true;
+  }
   for (const [, info] of playerList(room.players)) {
     const k = nameKey(info.name);
     if (M.pl[k]) continue;
-    const p = M.pl[k] = newPlayer(info.name);
+    const p = M.pl[k] = newPlayer(info.name, k);
     if (M.mode === 'turns' || M.mode === 'together') { const c = takeCard(); if (c) p.line = [lineCard(c)]; }
     if (M.mode === 'bingo') { p.grid = makeGrid(); p.marks = Array(25).fill(false); }
     M.order.push(k); changed = true;
   }
-  if (M.mode === 'turns' && M.phase === 'ready' && !onlineKeys().has(M.turn)) { M.turn = nextTurn(M.turn, true); changed = true; }
+  if (M.mode === 'turns' && M.phase === 'ready' && M.turn && !onlineKeys().has(M.turn)) { M.turn = nextTurn(M.turn, true); changed = true; }
+  if (M.mode === 'turns' && !M.turn && M.order.length && M.phase !== 'loading') { M.turn = nextTurn(M.order[0], true); changed = true; }
   if (changed) { saveMatch(); pushState(); }
   if (!$('#mgame').hidden) renderMatch();
   checkAllDone();
@@ -1252,9 +1515,10 @@ async function startMatch(){
   const r = rules(), ids = validSelection();
   if (!ids.length) { toast('Wähle unter Musik zuerst mindestens eine Playlist.'); return; }
   activateSdk();
-  M = { mode:r.mode, phase:'loading', round:0, target:r.target, placeSecs:r.placeSecs, answerSecs:r.answerSecs, win:r.win, check:r.check,
-        colors:colorTasks().map(id => taskById(id)), deck:{ cards:[], pos:0 }, pl:{}, order:[], turn:null, cards:[], songIdx:0,
-        color:null, task:null, timer:null, winners:[], revealed:false, newCard:null, msg:'Playlists werden geladen …' };
+  M = { mode:r.mode, phase:'loading', round:0, target:r.target, placeSecs:r.placeSecs, answerSecs:r.answerSecs, win:r.win, check:r.check, auto:r.auto,
+        colors:{ normal:colorTasks('normal').map(id => taskById(id)), adv:colorTasks('adv').map(id => taskById(id)) }, tasks:null,
+        deck:{ cards:[], pos:0 }, pl:{}, order:[], turn:null, lastTurn:null, cards:[], songIdx:0,
+        color:null, timer:null, winners:[], revealed:false, newCard:null, msg:'Songs werden geladen …' };
   show('mgame'); renderMatch(); pushState();
   try {
     let cards = await buildDeck(ids, t => { if (M) { M.msg = t; renderMatch(); } });
@@ -1283,14 +1547,42 @@ function setTimer(kind, secs){
   M.timer = { kind, total, end:fbNow() + total, local:Date.now() + total };
 }
 function startTick(){ if (!tickT) tickT = setInterval(tick, 200); }
+function autoReady(){
+  if (!M || !M.auto || M.phase !== 'reveal' || M.timer) return false;
+  if (M.mode === 'bingo') {
+    const on = onlineKeys();
+    return !Object.entries(M.pl).some(([k, p]) => on.has(k) && (p.result === 'pending' || (p.canMark !== null && p.canMark !== undefined)));
+  }
+  return true;
+}
+function autoAdvance(){
+  if (M.mode === 'turns') { nextRound(); if (M && M.phase === 'ready') drawRound(); }
+  else nextRound();
+}
+function setAuto(v){
+  if (!M) return;
+  M.auto = v; store.set('rules', { ...rules(), auto:v });
+  if (!v && M.timer && M.timer.kind === 'next') M.timer = null;
+  saveMatch(); pushState(); renderMatch();
+}
 function tick(){
   if (!M) return;
+  if (autoReady()) { setTimer('next', AUTO_SECS); pushState(); renderMatch(); }
   const t = M.timer;
   if (!t) return;
   const left = Math.max(0, t.local - Date.now());
+  if (t.kind === 'next') {
+    const f = $('#mAuto .fill'), s = $('#mAuto span');
+    if (f) f.style.width = (100 * Math.min(1, 1 - left / t.total)).toFixed(1) + '%';
+    if (s) s.textContent = 'Nächste Karte in ' + Math.ceil(left / 1000) + ' s';
+    if (left <= 0) { M.timer = null; if (M.phase === 'reveal' && M.auto) autoAdvance(); else { renderMatch(); pushState(); } }
+    return;
+  }
+  const choose = t.kind === 'place' || t.kind === 'answer';
   $('#mProg').style.strokeDashoffset = String(RING * Math.min(1, 1 - left / t.total));
-  $('#mProg').classList.toggle('alt', t.kind === 'place' || t.kind === 'answer');
+  $('#mProg').classList.toggle('alt', choose);
   $('#mCount').textContent = String(Math.ceil(left / 1000));
+  $('#mCount').classList.toggle('hurry', choose && left > 0 && left <= 5000);
   if (left > 0) return;
   if (t.kind === 'place' && M.phase === 'placing') reveal();
   else if (t.kind === 'answer' && M.phase === 'answering') reveal();
@@ -1301,10 +1593,17 @@ async function drawRound(){
   if (!M || M.phase === 'over' || M.phase === 'loading' || M.phase === 'playing') return;
   if (M.mode === 'turns' && !M.turn) { toast('Es ist niemand verbunden.'); return; }
   stopClip();
-  M.round++; M.revealed = false; M.newCard = null; M.songIdx = 0;
-  for (const p of Object.values(M.pl)) Object.assign(p, { placed:null, result:null, ans:null, self:null, answered:false, said:'' });
-  if (M.mode === 'bingo') { M.color = rnd(5); M.task = M.colors[M.color]; } else { M.color = null; M.task = null; }
-  const n = M.task && M.task.kind === 'two' ? 2 : 1;
+  M.round++; M.revealed = false; M.newCard = null; M.songIdx = 0; M.timer = null; M.lastTurn = null;
+  for (const p of Object.values(M.pl)) {
+    Object.assign(p, { placed:null, result:null, almost:false, ans:null, self:null, answered:false, said:'' });
+    if (p.lvlNext) { p.lvl = p.lvlNext; delete p.lvlNext; }
+  }
+  let n = 1;
+  if (M.mode === 'bingo') {
+    M.color = rnd(5);
+    M.tasks = { normal:M.colors.normal[M.color], adv:M.colors.adv[M.color] };
+    n = levelsInPlay().some(l => M.tasks[l].kind === 'two') ? 2 : 1;
+  } else { M.color = null; M.tasks = null; }
   M.cards = [];
   for (let i = 0; i < n; i++) { const c = takeCard(); if (!c) { showMsg('Im Stapel sind keine Songs mehr.'); return; } M.cards.push(c); }
   M.phase = 'loading'; M.msg = 'Song wird gestartet …'; renderMatch(); pushState();
@@ -1312,21 +1611,23 @@ async function drawRound(){
   catch (e) { M.phase = 'ready'; M.round--; renderMatch(); pushState(); handleError(e, drawRound); }
 }
 async function startSong(i){
+  // Reihum: Der Song läuft ohne Zeitlimit, bis eingeordnet ist
+  const endless = M.mode === 'turns';
   for (let tries = 0; tries < 4; tries++) {
     const c = M.cards[i];
-    c.start = startPos(c.duration, seconds());
+    c.start = startPos(c.duration, endless ? 30 : seconds());
     let res;
-    try { res = await playClip(c, () => songEnded(i)); }
+    try { res = await playClip(c, () => songEnded(i), endless); }
     catch (e) {
       if (e instanceof SkipError) { dropCard(c); const nc = takeCard(); if (!nc) break; M.cards[i] = nc; continue; }
       throw e;
     }
     if (!res) return;
     M.songIdx = i + 1; M.phase = 'playing'; M.msg = '';
-    setTimer('song', res.dur / 1000);
+    if (endless) M.timer = null; else setTimer('song', res.dur / 1000);
     saveMatch(); pushState(); renderMatch();
     clipRunsFine(c, res.tok).then(ok => {
-      if (ok || res.tok !== clip.token || !M) return;
+      if (ok || res.tok !== clip.token || !M || M.phase !== 'playing') return;
       clip.token++; clearTimeout(clip.timer);
       dropCard(c); const nc = takeCard(); if (!nc) return;
       M.cards[i] = nc; M.phase = 'loading'; M.msg = 'Nächster Versuch …'; renderMatch();
@@ -1357,16 +1658,16 @@ function afterSongs(){
 function stopSongEarly(){
   if (!M) return;
   if (M.timer && M.timer.kind === 'replay') { stopClip(); M.timer = null; renderMatch(); pushState(); return; }
-  if (M.phase !== 'playing') return;
+  if (M.phase !== 'playing') { stopClip(); renderMatch(); return; }
   stopClip();
   songEnded(M.songIdx - 1);
 }
+// Bingo: aufgedeckt wird, sobald alle mit Eingabefeld geantwortet haben. Zeitstrahl gleichzeitig wartet immer auf das Ende der Zeit.
 function checkAllDone(){
-  if (!M || M.revealed) return;
-  const active = [...onlineKeys()].filter(k => M.pl[k]);
-  if (!active.length) return;
-  if (M.mode === 'together' && M.phase === 'placing' && active.every(k => M.pl[k].placed !== null)) reveal();
-  if (M.mode === 'bingo' && M.phase === 'answering' && needsInput(M.task, M.check) && active.every(k => M.pl[k].answered)) reveal();
+  if (!M || M.revealed || M.mode !== 'bingo' || M.phase !== 'answering') return;
+  const on = onlineKeys();
+  const need = Object.entries(M.pl).filter(([k, p]) => on.has(k) && needsInput(taskFor(p), M.check));
+  if (need.length && need.every(([, p]) => p.answered)) reveal();
 }
 function placeOk(line, gap, y){
   const before = line[gap - 1], after = line[gap];
@@ -1374,11 +1675,14 @@ function placeOk(line, gap, y){
 }
 function reveal(){
   if (!M || M.revealed) return;
-  if (M.phase === 'playing' || M.phase === 'loading') stopClip();
+  if (M.phase === 'loading' || (M.phase === 'playing' && M.mode !== 'turns')) stopClip();
   M.timer = null; M.revealed = true; M.phase = 'reveal';
+  scoreRound(M.mode === 'turns' ? [M.turn] : Object.keys(M.pl));
+  saveMatch(); pushState(); renderMatch();
+}
+function scoreRound(keys){
   const c = M.cards[0], y = parseInt(c.year, 10);
   if (M.mode === 'turns' || M.mode === 'together') {
-    const keys = M.mode === 'turns' ? [M.turn] : Object.keys(M.pl);
     for (const k of keys) {
       const p = M.pl[k]; if (!p) continue;
       if (p.placed === null) { p.result = M.mode === 'turns' ? 'wrong' : null; continue; }
@@ -1386,28 +1690,33 @@ function reveal(){
       if (p.result === 'right') { p.line.push(lineCard(c)); p.line.sort((a, b) => a.y - b.y); }
     }
     M.newCard = lineCard(c);
-    const won = Object.entries(M.pl).filter(([, p]) => p.line.length >= M.target).map(([k]) => k);
-    if (won.length) { M.winners = won; M.phase = 'over'; }
+    M.winners = Object.entries(M.pl).filter(([, p]) => p.line.length >= M.target).map(([k]) => k);
+    if (M.winners.length) M.phase = 'over';
   }
   if (M.mode === 'bingo') {
-    for (const p of Object.values(M.pl)) {
-      if (!p.answered && needsInput(M.task, M.check)) { p.result = null; continue; }
+    for (const k of keys) {
+      const p = M.pl[k]; if (!p) continue;
+      if (!p.answered && needsInput(taskFor(p), M.check)) { p.result = null; continue; }
       settleBingo(p);
     }
   }
-  saveMatch(); pushState(); renderMatch();
 }
 function settleBingo(p){
-  const r = evalTask(M.task, M.check, p.ans, M.cards, p.self);
-  p.result = r === null ? 'pending' : r ? 'right' : 'wrong';
-  p.said = saidText(M.task, p.ans);
+  const task = taskFor(p), r = evalTask(task, M.check, p.ans, M.cards, p.self);
+  p.result = r.ok === null ? 'pending' : r.ok ? 'right' : 'wrong';
+  p.almost = r.almost;
+  p.said = saidText(task, p.ans);
   if (p.result === 'right' && p.grid.some((g, i) => g === M.color && !p.marks[i])) p.canMark = M.color;
 }
 function forceReveal(){ if (M && ['placing', 'answering', 'playing', 'loading'].includes(M.phase) && M.round) reveal(); }
 function nextRound(){
   if (!M) return;
-  stopClip(); M.timer = null;
-  if (M.mode === 'turns') { M.turn = nextTurn(M.turn, false); M.phase = 'ready'; M.revealed = false; M.cards = []; saveMatch(); pushState(); renderMatch(); return; }
+  M.timer = null;
+  if (M.mode === 'turns') {
+    // Die aufgedeckte Karte bleibt sichtbar, bis die nächste Karte gezogen wird
+    stopClip(); M.lastTurn = M.turn; M.turn = nextTurn(M.turn, false); M.phase = 'ready';
+    saveMatch(); pushState(); renderMatch(); return;
+  }
   M.phase = 'ready'; drawRound();
 }
 async function replay(){
@@ -1431,6 +1740,69 @@ function playAgain(){
   if (rules().mode === 'solo' || (room.code && onlineKeys().size)) startMatch(); else openHome();
 }
 
+/* Jahr korrigieren: gilt sofort für diese Runde und wird für alle späteren Spiele gespeichert */
+function openFix(){
+  if (!M || !M.cards.length) return;
+  $('#peekTitle').textContent = 'Jahr korrigieren';
+  const body = $('#peekBody'); body.innerHTML = '';
+  const wrap = el('div', 'stack');
+  wrap.append(txt('p', 'muted small', 'Die Korrektur wird gespeichert und gilt ab sofort, auch in späteren Spielen. Diese Runde wird neu gewertet.'));
+  const inputs = M.cards.map((c, i) => {
+    const lab = txt('label', '', (M.cards.length > 1 ? 'Song ' + (i + 1) + ': ' : '') + c.title + ', ' + c.artist);
+    lab.style.fontWeight = '600';
+    const inp = el('input', 'field'); inp.inputMode = 'numeric'; inp.maxLength = 4; inp.value = c.year; inp.dataset.i = i;
+    wrap.append(lab, inp); return inp;
+  });
+  const err = el('p', 'err'), b = txt('button', 'btn primary', 'Speichern'); b.type = 'button';
+  b.onclick = () => {
+    const ys = inputs.map(i => i.value.trim());
+    if (ys.some(y => !/^\d{4}$/.test(y) || +y < 1900 || +y > new Date().getFullYear() + 1)) { err.textContent = 'Gib ein Jahr mit vier Ziffern ein.'; return; }
+    $('#peek').hidden = true; applyFix(ys);
+  };
+  wrap.append(err, b); body.append(wrap); $('#peek').hidden = false;
+}
+function applyFix(ys){
+  if (!M) return;
+  const fixes = store.get('fixes', {}), old = M.cards.map(c => ({ ...c }));
+  let changed = false;
+  M.cards.forEach((c, i) => {
+    if (ys[i] === c.year) return;
+    changed = true;
+    const k = c.k || songKey(c.title, c.artist);
+    fixes[k] = ys[i]; c.year = ys[i];
+    for (const d of M.deck.cards) if ((d.k || songKey(d.title, d.artist)) === k) d.year = ys[i];
+  });
+  if (!changed) return;
+  store.set('fixes', fixes);
+  if (M.mode !== 'solo') rescore(old);
+  saveMatch(); pushState(); renderMatch();
+  toast('Jahr korrigiert und gespeichert.');
+}
+function rescore(old){
+  const wasReady = M.phase === 'ready';
+  if (M.mode === 'turns' || M.mode === 'together') {
+    const oc = old[0], oy = parseInt(oc.year, 10);
+    const keys = M.mode === 'turns' ? [wasReady ? M.lastTurn : M.turn].filter(Boolean) : Object.keys(M.pl);
+    for (const k of keys) {
+      const p = M.pl[k];
+      if (!p || p.result !== 'right') continue;
+      const i = p.line.findIndex(c => c.t === oc.title && c.a === oc.artist && c.y === oy);
+      if (i >= 0) p.line.splice(i, 1);
+    }
+    M.phase = 'reveal';
+    scoreRound(keys);
+    if (wasReady && M.phase !== 'over') M.phase = 'ready';
+    return;
+  }
+  for (const p of Object.values(M.pl)) {
+    if (p.markRound === M.round && p.markIdx !== null && p.markIdx !== undefined) { p.marks[p.markIdx] = false; p.markIdx = null; }
+    if (p.result) p.canMark = null;
+  }
+  scoreRound(Object.keys(M.pl).filter(k => M.pl[k].result));
+  M.winners = M.order.filter(k => M.pl[k] && bingoWon(M.pl[k].marks, M.win));
+  M.phase = M.winners.length ? 'over' : 'reveal';
+}
+
 /* Aktionen der Spielerhandys */
 function onActions(all){
   for (const [uid, act] of Object.entries(all)) {
@@ -1445,11 +1817,12 @@ function onActions(all){
 function handleAction(k, p, a){
   if (a.t === 'draw') { if (M.mode === 'turns' && M.phase === 'ready' && M.turn === k && a.round === M.round) drawRound(); return; }
   if (a.t === 'place') {
-    if (M.phase !== 'placing' || a.round !== M.round) return;
+    if (!['placing', 'playing'].includes(M.phase) || a.round !== M.round || M.revealed) return;
     if (M.mode === 'turns' && M.turn !== k) return;
+    if (M.mode !== 'turns' && M.mode !== 'together') return;
     const g = Number(a.gap); if (!(g >= 0 && g <= p.line.length)) return;
     p.placed = g; saveMatch();
-    if (M.mode === 'turns') reveal(); else { pushState(); renderMatch(); checkAllDone(); }
+    if (M.mode === 'turns') reveal(); else { pushState(); renderMatch(); }
     return;
   }
   if (a.t === 'answer') {
@@ -1466,8 +1839,8 @@ function handleAction(k, p, a){
     if (M.mode !== 'bingo' || p.canMark === null || p.canMark === undefined) return;
     const i = Number(a.idx);
     if (!(i >= 0 && i < 25) || p.grid[i] !== p.canMark || p.marks[i]) return;
-    p.marks[i] = true; p.canMark = null;
-    if (bingoWon(p.marks, M.win)) { if (!M.winners.includes(k)) M.winners.push(k); M.phase = 'over'; }
+    p.marks[i] = true; p.canMark = null; p.markIdx = i; p.markRound = M.round;
+    if (bingoWon(p.marks, M.win)) { if (!M.winners.includes(k)) M.winners.push(k); M.phase = 'over'; M.timer = null; }
     saveMatch(); pushState(); renderMatch();
   }
 }
@@ -1479,16 +1852,16 @@ function pushState(){
   const open = M.revealed || M.phase === 'over';
   const pl = {};
   for (const [k, p] of Object.entries(M.pl)) {
-    pl[k] = { name:p.name, line:p.line, placed:p.placed !== null, answered:!!p.answered, result:p.result || null,
+    pl[k] = { name:p.name, lvl:p.lvl || 'normal', line:p.line, placed:p.placed !== null, answered:!!p.answered, result:p.result || null, almost:open ? !!p.almost : false,
               gap:open && p.placed !== null ? p.placed : null, said:open ? (p.said || '') : '',
               grid:p.grid || null, marks:p.marks || null, canMark:p.canMark === undefined ? null : p.canMark };
   }
   const t = M.timer;
   const st = {
-    mode:M.mode, phase:M.phase, round:M.round, target:M.target || 0, win:M.win, check:M.check,
-    turn:M.turn || null, order:M.order, songIdx:M.songIdx || 0, songs:M.cards.length,
+    mode:M.mode, phase:M.phase, round:M.round, target:M.target || 0, win:M.win, check:M.check, auto:!!M.auto,
+    turn:M.turn || null, lastTurn:M.lastTurn || null, order:M.order, songIdx:M.songIdx || 0, songs:M.cards.length,
     timer:t ? { kind:t.kind, total:t.total, end:t.end } : null,
-    color:M.color, task:M.task || null,
+    color:M.color, tasks:M.tasks || null,
     cards:open && M.cards.length ? M.cards.map(c => ({ title:c.title, artist:c.artist, year:c.year, album:c.album })) : null,
     newCard:open ? M.newCard : null, winners:M.winners, pl,
     n:M.deck.pos, total:M.deck.cards.length
@@ -1503,10 +1876,12 @@ function cardHtml(c, label){
     '<p class="year">' + esc(c.year) + '</p><p class="title">' + esc(c.title) + '</p><p class="artist">' + esc(c.artist) + '</p>' +
     (c.album ? '<p class="album">Album: ' + esc(c.album) + '</p>' : '') + '</article>';
 }
-function bannerHtml(colorIdx, task){
+function bannerHtml(colorIdx, title, extra){
   const c = COLORS[colorIdx];
-  return '<div class="banner" style="background:' + c.bg + ';color:' + c.fg + '"><div class="bc">' + esc(c.name) + '</div><div class="bt">' + esc(task.name) + '</div></div>';
+  return '<div class="banner" style="background:' + c.bg + ';color:' + c.fg + '"><div class="bc">' + esc(c.name) + '</div><div class="bt">' + esc(title) + '</div>' +
+    (extra ? '<div class="bt">' + esc(extra) + '</div>' : '') + '</div>';
 }
+const autoBarHtml = text => '<div class="autobar"><div class="fill"></div><span>' + esc(text) + '</span></div>';
 function setHtml(node, html){ if (node.dataset.html !== html) { node.innerHTML = html; node.dataset.html = html; } }
 function renderMatch(){
   if (!M || $('#mgame').hidden) return;
@@ -1514,72 +1889,106 @@ function renderMatch(){
   const name = k => (M.pl[k] && M.pl[k].name) || '';
   $('#mInfo').textContent = M.round ? MODES[M.mode].name + ', Runde ' + M.round : MODES[M.mode].name;
   $('#toLobby').hidden = !room.code;
-  if (M.mode === 'bingo' && M.color !== null && M.task && M.round && M.phase !== 'ready') setHtml($('#mBanner'), bannerHtml(M.color, M.task));
+  if (M.mode === 'bingo' && M.color !== null && M.tasks && M.round && M.phase !== 'ready') {
+    const used = levelsInPlay(), t = M.tasks;
+    setHtml($('#mBanner'), used.length > 1 && t.normal.id !== t.adv.id
+      ? bannerHtml(M.color, 'Normal: ' + t.normal.name, 'Fortgeschritten: ' + t.adv.name)
+      : bannerHtml(M.color, t[used[0]].name));
+  }
   else if (M.mode === 'turns' && M.turn && M.phase !== 'over' && M.phase !== 'loading') setHtml($('#mBanner'), '<div class="banner plain"><div class="muted small">Am Zug</div><div class="bc">' + esc(name(M.turn)) + '</div></div>');
   else setHtml($('#mBanner'), '');
   const showCards = M.revealed && M.cards.length > 0;
   const replaying = !!(M.timer && M.timer.kind === 'replay');
+  const cardsVisible = showCards && !(M.phase === 'over' && M.mode === 'bingo');
   $('#mDisc').hidden = (showCards && !replaying) || M.phase === 'over';
-  $('#mCards').hidden = !showCards || (M.phase === 'over' && M.mode === 'bingo');
+  $('#mCards').hidden = !cardsVisible;
   $('#mCards').className = 'cards' + (M.cards.length > 1 ? ' two' : '');
   if (showCards) setHtml($('#mCards'), M.cards.map((c, i) => cardHtml(c, M.cards.length > 1 ? 'Song ' + (i + 1) : '')).join(''));
   $('#mRecord').classList.toggle('spin', M.phase === 'playing' || replaying);
-  if (!M.timer) { $('#mProg').style.strokeDashoffset = M.phase === 'stopped' || M.phase === 'placing' || M.phase === 'answering' ? String(RING) : '0'; $('#mCount').textContent = ''; }
-  const total = [...onlineKeys()].filter(k => M.pl[k]).length;
-  const placedN = Object.values(M.pl).filter(p => p.placed !== null).length, answeredN = Object.values(M.pl).filter(p => p.answered).length;
+  if (!M.timer || M.timer.kind === 'next') {
+    $('#mProg').style.strokeDashoffset = M.phase === 'stopped' || M.phase === 'placing' || M.phase === 'answering' ? String(RING) : '0';
+    $('#mCount').textContent = ''; $('#mCount').classList.remove('hurry');
+  }
+  const on = onlineKeys(), act = Object.entries(M.pl).filter(([k]) => on.has(k));
+  const placedN = act.filter(([, p]) => p.placed !== null).length;
+  const needers = M.mode === 'bingo' ? act.filter(([, p]) => needsInput(taskFor(p), M.check)) : [];
+  const answeredN = needers.filter(([, p]) => p.answered).length;
   const status = {
     loading:M.msg || 'Einen Moment …',
     ready:M.mode === 'turns' ? name(M.turn) + ' zieht die nächste Karte, am eigenen Handy oder hier.' : 'Bereit für die nächste Runde.',
-    playing:M.cards.length === 2 ? 'Song ' + M.songIdx + ' von 2 läuft' : 'Hör genau hin',
-    placing:M.mode === 'turns' ? name(M.turn) + ' ordnet ein …' : placedN + ' von ' + total + ' haben eingeordnet',
-    answering:needsInput(M.task, M.check) ? answeredN + ' von ' + total + ' haben geantwortet' : 'Jetzt laut antworten, dann aufdecken.',
+    playing:(M.cards.length === 2 ? 'Song ' + M.songIdx + ' von 2 läuft' : M.mode === 'turns' ? name(M.turn) + ' hört und ordnet ein …' : 'Hör genau hin')
+      + (M.mode === 'together' && placedN ? ', ' + placedN + ' von ' + act.length + ' eingeordnet' : '')
+      + (M.mode === 'bingo' && answeredN ? ', ' + answeredN + ' von ' + needers.length + ' geantwortet' : ''),
+    placing:M.mode === 'turns' ? name(M.turn) + ' ordnet ein …' : placedN + ' von ' + act.length + ' haben eingeordnet',
+    answering:needers.length ? answeredN + ' von ' + needers.length + ' haben geantwortet' : 'Jetzt laut antworten, dann aufdecken.',
     stopped:'Zeit um. Aus welchem Jahr ist der Song?'
   }[M.phase] || '';
   $('#mStatus').textContent = replaying ? 'Läuft nochmal' : status;
   let res = '';
   if (M.phase === 'over') res = '<div class="win"><div class="muted">Gewonnen hat</div><div class="wt">' + esc(M.winners.map(name).join(' und ') || 'niemand') + '</div></div>';
   else if (M.revealed && M.mode === 'turns') {
-    const p = M.pl[M.turn];
-    if (p) res = p.result === 'right' ? '<div class="result good">' + esc(p.name) + ' lag richtig und hat jetzt ' + p.line.length + ' Karten.</div>'
-                                      : '<div class="result no">' + esc(p.name) + (p.placed === null ? ' hat nicht eingeordnet.' : ' lag daneben.') + '</div>';
+    const k = M.phase === 'ready' ? M.lastTurn : M.turn, p = M.pl[k];
+    if (p && p.result) res = p.result === 'right' ? '<div class="result good">' + esc(p.name) + ' lag richtig und hat jetzt ' + p.line.length + ' Karten.</div>'
+                                                  : '<div class="result no">' + esc(p.name) + (p.placed === null ? ' hat nicht eingeordnet.' : ' lag daneben.') + '</div>';
   }
+  if (cardsVisible) res += '<button class="link fixlink" id="fixBtn" type="button">Jahr falsch? Korrigieren</button>';
   setHtml($('#mResult'), res);
+  const fixBtn = $('#fixBtn'); if (fixBtn) fixBtn.onclick = openFix;
+  if (M.timer && M.timer.kind === 'next') setHtml($('#mAuto'), autoBarHtml('Nächste Karte in ' + AUTO_SECS + ' s'));
+  else if (M.auto && M.phase === 'reveal') setHtml($('#mAuto'), '<div class="autobar"><span>Automatik wartet, bis alle ihr Feld gewählt oder sich bewertet haben …</span></div>');
+  else setHtml($('#mAuto'), '');
   const acts = $('#mActions'); acts.innerHTML = '';
   const btn = (label, fn, primary) => { const b = txt('button', 'btn ' + (primary ? 'primary' : 'secondary'), label); b.type = 'button'; b.onclick = fn; acts.append(b); };
   if (M.phase === 'ready') btn(M.mode === 'turns' ? 'Karte für ' + name(M.turn) + ' ziehen' : M.round ? 'Nächste Runde' : 'Erste Karte ziehen', drawRound, true);
-  if (M.phase === 'playing' || replaying) btn('Song stoppen', stopSongEarly, false);
-  if (M.phase === 'placing' || M.phase === 'answering') btn('Jetzt aufdecken', forceReveal, M.mode === 'bingo' && !needsInput(M.task, M.check));
+  if (M.phase === 'playing' || replaying || (M.phase === 'reveal' && clip.on && M.mode === 'turns')) btn('Song stoppen', stopSongEarly, false);
+  if (M.phase === 'placing' || M.phase === 'answering') btn('Jetzt aufdecken', forceReveal, M.mode === 'bingo' && !needers.length);
   if (M.phase === 'stopped') { btn('Karte umdrehen', soloFlip, true); btn('Nochmal hören', replay, false); }
   if (M.phase === 'reveal') {
     btn(M.mode === 'turns' ? 'Weiter mit ' + name(nextTurn(M.turn, false)) : M.mode === 'bingo' ? 'Nächste Runde' : 'Nächste Karte', nextRound, true);
-    if (!replaying) btn('Nochmal hören', replay, false);
+    if (!replaying && !clip.on) btn('Nochmal hören', replay, false);
   }
   if (M.phase === 'over') { btn('Nochmal spielen', playAgain, true); btn('Zum Hauptmenü', endMatchToHome, false); }
+  const ar = $('#mAutoRow'); ar.innerHTML = ''; ar.className = 'row2 first col'; ar.hidden = M.phase === 'over';
+  if (!ar.hidden) {
+    const g = el('div', 'seg');
+    for (const [v, t] of [[false, 'Selbst weiter'], [true, 'Automatisch']]) {
+      const b = txt('button', !!M.auto === v ? 'on' : '', t); b.type = 'button'; b.onclick = () => setAuto(v); g.append(b);
+    }
+    ar.append(txt('span', 'muted small', 'Nach dem Aufdecken'), g);
+  }
   renderBoard();
 }
 function renderBoard(){
   const box = $('#mBoard'); box.innerHTML = '';
   if (M.mode === 'solo') { if (M.deck.cards.length) box.append(Object.assign(txt('p', 'muted small', 'Karte ' + Math.min(M.deck.pos, M.deck.cards.length) + ' von ' + M.deck.cards.length), { style:'text-align:center' })); return; }
-  const on = onlineKeys();
+  const on = onlineKeys(), judged = M.mode === 'turns' ? (M.phase === 'ready' ? M.lastTurn : M.turn) : null;
   for (const k of M.order) {
     const p = M.pl[k]; if (!p) continue;
-    const row = el('div', 'prow' + (M.mode === 'turns' && M.turn === k && M.phase !== 'over' ? ' turn' : '') + (on.has(k) ? '' : ' off'));
+    const mark = M.revealed && (p.result === 'right' || p.result === 'wrong') && (M.mode !== 'turns' || k === judged) ? p.result : '';
+    const row = el('div', 'prow' + (M.mode === 'turns' && M.turn === k && M.phase !== 'over' ? ' turn' : '') + (on.has(k) ? '' : ' off') + (mark ? ' ' + mark : ''));
     let info = '';
-    if (M.mode === 'together' && M.phase === 'placing') info = p.placed !== null ? '✓ eingeordnet' : '…';
-    if (M.mode === 'bingo' && !M.revealed && M.round && needsInput(M.task, M.check)) info = p.answered ? '✓ geantwortet' : '…';
-    if (M.revealed && p.result) {
-      const t = p.result === 'right' ? '<span class="ok">richtig</span>' : p.result === 'wrong' ? '<span class="bad">falsch</span>' : 'bewertet sich …';
+    if (M.mode === 'together' && M.round && !M.revealed && ['placing', 'playing'].includes(M.phase)) info = p.placed !== null ? '✓ eingeordnet' : '…';
+    if (M.mode === 'bingo' && !M.revealed && M.round && needsInput(taskFor(p), M.check)) info = p.answered ? '✓ geantwortet' : '…';
+    if (M.revealed && p.result && (M.mode !== 'turns' || k === judged)) {
+      const t = p.result === 'right' ? (p.almost ? 'richtig, nicht ganz richtig geschrieben' : 'richtig') : p.result === 'wrong' ? 'falsch' : 'bewertet sich …';
       info = (p.said ? esc(p.said) + ', ' : '') + t;
     }
-    if (M.mode === 'bingo' && p.canMark !== null && p.canMark !== undefined) info += ', wählt ein Feld';
+    if (M.mode === 'bingo' && p.canMark !== null && p.canMark !== undefined) info += (info ? ', ' : '') + 'wählt ein Feld';
     const score = M.mode === 'bingo' ? 'noch ' + bingoMissing(p.marks, M.win) : p.line.length + '/' + M.target;
-    row.innerHTML = '<span class="pn">' + esc(p.name) + '</span><span class="pi">' + info + '</span><span class="ps">' + esc(score) + '</span>';
+    row.innerHTML = '<span class="pn">' + (mark === 'right' ? '✓ ' : mark === 'wrong' ? '✗ ' : '') + esc(p.name) + '</span><span class="pi">' + info + '</span><span class="ps">' + esc(score) + '</span>';
+    if (M.mode === 'bingo') {
+      const lv = p.lvlNext || p.lvl;
+      const b = txt('button', 'lvl' + (lv === 'adv' ? ' adv' : ''), (p.lvlNext ? '→ ' : '') + (lv === 'adv' ? 'Fortg.' : 'Normal')); b.type = 'button';
+      b.title = 'Schwierigkeit ändern';
+      b.onclick = () => setLevel(k, lv === 'adv' ? 'normal' : 'adv');
+      row.insertBefore(b, row.children[1]);
+    }
     box.append(row);
   }
 }
 
 /* ---------- Spielerhandy ---------- */
-const seat = { code:null, name:'', key:'', unsub:null, presence:null, room:null, tick:null, sel:null, selRound:-1, formKey:'', form:null, selfAns:{} };
+const seat = { code:null, name:'', key:'', unsub:null, presence:null, room:null, tick:null, sel:null, selRound:-1, formKey:'', form:null, selfAns:{}, unveil:false, sentRound:-1 };
 
 function openJoin(code){
   show('pjoin');
@@ -1609,7 +2018,7 @@ async function joinRoom(){
 }
 function enterRoom(code, name){
   leaveListeners();
-  Object.assign(seat, { code, name, key:nameKey(name), room:null, sel:null, selRound:-1, formKey:'', form:null, selfAns:{} });
+  Object.assign(seat, { code, name, key:nameKey(name), room:null, sel:null, selRound:-1, formKey:'', form:null, selfAns:{}, unveil:false, sentRound:-1 });
   show('pplay');
   $('#rejoinBtn').hidden = true;
   $('#pRoomInfo').textContent = name + ' in Raum ' + code;
@@ -1640,7 +2049,7 @@ function send(act){
 function playerGone(text){
   leaveListeners(); store.del('join');
   $('#pMini').hidden = true; $('#pCards').hidden = true;
-  ['#pBanner', '#pResult', '#pMain', '#pActions', '#pOthers'].forEach(s => { $(s).innerHTML = ''; delete $(s).dataset.html; });
+  ['#pBanner', '#pResult', '#pMain', '#pActions', '#pOthers', '#pAuto'].forEach(s => { $(s).innerHTML = ''; delete $(s).dataset.html; });
   seat.formKey = '';
   $('#pWait').hidden = false; $('#pWait').textContent = text; $('#rejoinBtn').hidden = false;
 }
@@ -1658,7 +2067,7 @@ function drawPlayer(r){
   $('#pRoomInfo').textContent = seat.name + ' in Raum ' + seat.code + (st.round ? ', Runde ' + st.round : '');
   if (st.phase === 'lobby' || !st.mode || (st.mode !== 'solo' && !meP)) {
     mini.hidden = true; cards.hidden = true;
-    ['#pBanner', '#pResult', '#pMain', '#pActions'].forEach(s => { $(s).innerHTML = ''; delete $(s).dataset.html; });
+    ['#pBanner', '#pResult', '#pMain', '#pActions', '#pAuto'].forEach(s => { $(s).innerHTML = ''; delete $(s).dataset.html; });
     seat.formKey = '';
     wait.hidden = false;
     wait.textContent = st.phase === 'lobby' || !st.phase ? 'Du bist drin. Warte, bis das Haupthandy das Spiel startet.' + (st.mode ? ' Gespielt wird: ' + MODES[st.mode].name + '.' : '')
@@ -1669,21 +2078,29 @@ function drawPlayer(r){
   const name = k => (st.pl && st.pl[k] && st.pl[k].name) || '';
   const myTurn = st.mode === 'turns' && st.turn === seat.key;
   const replaying = !!(st.timer && st.timer.kind === 'replay');
-  if (st.mode === 'bingo' && st.task && st.color !== null && st.color !== undefined && st.round && st.phase !== 'ready') setHtml($('#pBanner'), bannerHtml(st.color, st.task));
+  const myTask = st.tasks ? st.tasks[meP && meP.lvl === 'adv' ? 'adv' : 'normal'] : null;
+  if (st.mode === 'bingo' && myTask && st.color !== null && st.color !== undefined && st.round && st.phase !== 'ready') setHtml($('#pBanner'), bannerHtml(st.color, myTask.name));
   else if (st.mode === 'turns' && st.turn && st.phase !== 'over') setHtml($('#pBanner'), '<div class="banner plain"><div class="muted small">Am Zug</div><div class="bc">' + (myTurn ? 'Du' : esc(name(st.turn))) + '</div></div>');
   else setHtml($('#pBanner'), '');
   const showCards = !!(st.cards && st.cards.length);
-  mini.hidden = st.phase === 'over' || (showCards && !replaying) || (st.phase === 'ready' && st.mode !== 'turns') || !st.round && st.mode !== 'turns';
+  const turnsReady = st.mode === 'turns' && st.phase === 'ready';
+  mini.hidden = st.phase === 'over' || (showCards && !replaying && !turnsReady) || (st.phase === 'ready' && st.mode !== 'turns') || (!st.round && st.mode !== 'turns');
   $('#pRecord').classList.toggle('spin', st.phase === 'playing' || replaying);
+  const placedMe = meP && (meP.placed || seat.sentRound === st.round);
   $('#pStatus').textContent = replaying ? 'Läuft nochmal' : {
     loading:'Gleich geht’s los …',
     ready:st.mode === 'turns' ? (myTurn ? 'Du bist dran. Zieh eine Karte.' : name(st.turn) + ' ist dran.') : 'Gleich kommt die nächste Karte.',
-    playing:st.songs === 2 ? 'Song ' + st.songIdx + ' von 2 läuft' : 'Hör genau hin',
-    placing:st.mode === 'turns' ? (myTurn ? 'Wo gehört der Song hin?' : name(st.turn) + ' ordnet ein …') : (meP && meP.placed ? 'Eingeordnet. Warte auf die anderen.' : 'Wo gehört der Song hin?'),
-    answering:needsInput(st.task, st.check) ? (meP && meP.answered ? 'Antwort abgeschickt. Warte auf die anderen.' : 'Jetzt antworten') : 'Sag deine Antwort laut.',
+    playing:st.songs === 2 ? 'Song ' + st.songIdx + ' von 2 läuft'
+      : st.mode === 'turns' ? (myTurn ? 'Hör hin und ordne ein. Der Song läuft, bis du bestätigst.' : name(st.turn) + ' hört und ordnet ein …')
+      : st.mode === 'together' ? (placedMe ? 'Eingeordnet. Aufgedeckt wird, wenn die Zeit um ist.' : 'Hör hin und ordne ein.') : 'Hör genau hin',
+    placing:st.mode === 'turns' ? (myTurn ? 'Wo gehört der Song hin?' : name(st.turn) + ' ordnet ein …') : (placedMe ? 'Eingeordnet. Aufgedeckt wird, wenn die Zeit um ist.' : 'Wo gehört der Song hin?'),
+    answering:needsInput(myTask, st.check) ? (meP && meP.answered ? 'Antwort abgeschickt. Warte auf die anderen.' : 'Jetzt antworten') : 'Sag deine Antwort laut.',
     stopped:'Zeit um.'
   }[st.phase] || '';
-  if (!st.timer) { $('#pProg').style.strokeDashoffset = st.phase === 'placing' || st.phase === 'answering' ? String(RING) : '0'; $('#pCount').textContent = ''; }
+  if (!st.timer || st.timer.kind === 'next') {
+    $('#pProg').style.strokeDashoffset = st.phase === 'placing' || st.phase === 'answering' ? String(RING) : '0';
+    $('#pCount').textContent = ''; $('#pBig').textContent = ''; $('#pBig').classList.remove('hurry');
+  }
   $('#pProg').classList.toggle('alt', !!st.timer && (st.timer.kind === 'place' || st.timer.kind === 'answer'));
   cards.hidden = !showCards || (st.phase === 'over' && st.mode === 'bingo');
   if (showCards) { cards.className = 'cards' + (st.cards.length > 1 ? ' two' : ''); setHtml(cards, st.cards.map((c, i) => cardHtml(c, st.cards.length > 1 ? 'Song ' + (i + 1) : '')).join('')); }
@@ -1692,21 +2109,24 @@ function drawPlayer(r){
     const w = (st.winners || []).map(k => k === seat.key ? 'Du' : name(k));
     res = '<div class="win"><div class="muted">Gewonnen hat</div><div class="wt">' + esc(w.join(' und ') || 'niemand') + '</div></div>';
   } else if (showCards && st.mode === 'turns') {
-    const tp = st.pl[st.turn];
-    if (tp && tp.result) res = tp.result === 'right' ? '<div class="result good">' + (myTurn ? 'Richtig! Die Karte bleibt bei dir.' : esc(tp.name) + ' lag richtig.') + '</div>'
-                                                     : '<div class="result no">' + (myTurn ? 'Daneben. Die Karte ist weg.' : esc(tp.name) + ' lag daneben.') + '</div>';
+    const tk = turnsReady ? st.lastTurn : st.turn, tp = tk && st.pl[tk], mine = tk === seat.key;
+    if (tp && tp.result) res = (turnsReady ? '<p class="muted small" style="text-align:center;margin:.5rem 0 0">Letzte Karte</p>' : '') +
+      (tp.result === 'right' ? '<div class="result good">' + (mine ? 'Richtig! Die Karte bleibt bei dir.' : esc(tp.name) + ' lag richtig.') + '</div>'
+                             : '<div class="result no">' + (mine ? 'Daneben. Die Karte ist weg.' : esc(tp.name) + ' lag daneben.') + '</div>');
   } else if (showCards && st.mode === 'together' && meP) {
     res = meP.result === 'right' ? '<div class="result good">Richtig! Die Karte bleibt bei dir.</div>' : meP.result === 'wrong' ? '<div class="result no">Daneben. Die Karte ist weg.</div>' : '<div class="result no">Nicht rechtzeitig eingeordnet.</div>';
   } else if (showCards && st.mode === 'bingo' && meP) {
     const can = meP.canMark !== null && meP.canMark !== undefined;
-    res = meP.result === 'right' ? '<div class="result good">Richtig!' + (can ? ' Tippe ein ' + COLORS[meP.canMark].name.toLowerCase() + 'es Feld an.' : '') + '</div>'
+    const almost = meP.almost ? '<div class="almost">Nicht ganz richtig geschrieben, der Punkt zählt trotzdem.</div>' : '';
+    res = meP.result === 'right' ? '<div class="result good">Richtig!' + (can ? ' Tippe ein ' + COLORS[meP.canMark].name.toLowerCase() + 'es Feld an.' : '') + almost + '</div>'
         : meP.result === 'wrong' ? '<div class="result no">Leider falsch.</div>'
         : meP.result === 'pending' ? '<div class="result info">Hattest du es richtig?</div>'
         : '<div class="result no">Keine Antwort abgegeben.</div>';
   }
   setHtml($('#pResult'), res);
+  setHtml($('#pAuto'), st.timer && st.timer.kind === 'next' ? autoBarHtml('Nächste Karte gleich …') : '');
   if (st.mode === 'turns' || st.mode === 'together') drawTimelineArea(st, meP, myTurn);
-  else if (st.mode === 'bingo') drawBingoArea(st, meP);
+  else if (st.mode === 'bingo') drawBingoArea(st, meP, myTask);
   else { $('#pMain').innerHTML = ''; $('#pActions').innerHTML = ''; }
   drawOthers(r, st);
   playerTick();
@@ -1714,12 +2134,23 @@ function drawPlayer(r){
 function lineHtml(line){
   return (line || []).map(c => '<div class="tlc" style="background:' + yearColor(c.y) + '"><span class="ty">' + c.y + '</span><span class="tt">' + esc(c.t) + '<br><span>' + esc(c.a) + '</span></span></div>').join('');
 }
+function newRound(st){
+  if (seat.selRound !== st.round) Object.assign(seat, { sel:null, selRound:st.round, unveil:false, sentRound:-1 });
+}
+// Nach dem Bestätigen wird die eigene Antwort verschwommen, damit niemand abschauen kann. Antippen zeigt sie wieder zum Ändern.
+function veilButton(text, onOpen){
+  const b = el('button', 'veilbtn'); b.type = 'button';
+  b.append(txt('span', '', text)); b.onclick = onOpen;
+  return b;
+}
 function drawTimelineArea(st, meP, myTurn){
   const main = $('#pMain'), acts = $('#pActions');
   if (!meP) { main.innerHTML = ''; acts.innerHTML = ''; return; }
-  const canPlace = st.phase === 'placing' && (st.mode === 'together' || myTurn);
-  if (seat.selRound !== st.round) { seat.sel = null; seat.selRound = st.round; }
+  newRound(st);
+  const canPlace = ['placing', 'playing'].includes(st.phase) && !st.cards && (st.mode === 'together' || myTurn);
   if (!canPlace && !st.cards) seat.sel = null;
+  const confirmed = st.mode === 'together' && canPlace && (meP.placed || seat.sentRound === st.round);
+  const veiled = confirmed && !seat.unveil;
   const line = meP.line || [];
   main.innerHTML = '';
   const head = el('div', 'tlhead');
@@ -1743,57 +2174,77 @@ function drawTimelineArea(st, meP, myTurn){
       tl.append(d);
     }
   }
-  main.append(head, tl);
+  const veil = el('div', 'veil' + (veiled ? ' on' : '')), body = el('div', 'veilbody');
+  body.append(tl); veil.append(body);
+  if (veiled) veil.append(veilButton('Eingeordnet ✓ Zum Ändern hier tippen.', () => { seat.unveil = true; drawTimelineArea(st, meP, myTurn); }));
+  main.append(head, veil);
   acts.innerHTML = '';
   if (st.mode === 'turns' && myTurn && st.phase === 'ready') {
     const b = txt('button', 'btn primary', 'Karte ziehen'); b.type = 'button'; b.onclick = () => { b.disabled = true; b.textContent = 'Gesendet'; send({ t:'draw' }); }; acts.append(b);
   }
-  if (canPlace) {
-    const b = txt('button', 'btn primary', meP.placed && st.mode === 'together' ? 'Neu einordnen' : 'Einordnen bestätigen'); b.type = 'button';
+  if (canPlace && !veiled) {
+    const b = txt('button', 'btn primary', confirmed ? 'Neue Auswahl bestätigen' : 'Einordnen bestätigen'); b.type = 'button';
     b.disabled = seat.sel === null;
-    b.onclick = () => { if (seat.sel === null) return; send({ t:'place', gap:seat.sel }); b.disabled = true; b.textContent = 'Gesendet'; };
+    b.onclick = () => {
+      if (seat.sel === null) return;
+      send({ t:'place', gap:seat.sel }); seat.sentRound = st.round; seat.unveil = false;
+      b.disabled = true; b.textContent = 'Gesendet';
+      if (st.mode === 'together') drawTimelineArea(st, meP, myTurn);
+    };
     acts.prepend(b);
   }
 }
-function drawBingoArea(st, meP){
+function drawBingoArea(st, meP, myTask){
   const main = $('#pMain'), acts = $('#pActions');
   if (!meP || !meP.grid) { main.innerHTML = ''; acts.innerHTML = ''; seat.formKey = ''; return; }
-  const answering = !!(st.round && st.task && !st.cards && ['playing', 'answering', 'loading'].includes(st.phase));
-  const fkey = st.round + '|' + (answering ? 'a' : 'x');
+  newRound(st);
+  const answering = !!(st.round && myTask && !st.cards && ['playing', 'answering', 'loading'].includes(st.phase));
+  const fkey = st.round + '|' + (answering ? 'a' : 'x') + '|' + (myTask ? myTask.id : '');
   if (seat.formKey !== fkey) {
     seat.formKey = fkey; seat.selfAns = {}; seat.form = null;
     main.innerHTML = '';
-    const formBox = el('div', 'box'); formBox.id = 'pForm';
+    const formBox = el('div', 'box veil'); formBox.id = 'pForm';
+    const body = el('div', 'veilbody');
+    formBox.append(body);
     const gridBox = el('div'); gridBox.id = 'pGridBox';
     const fa = el('div', 'actions'); fa.id = 'pFormActs';
     main.append(formBox, fa, gridBox);
     if (answering) {
-      const f = buildAnswerForm(st.task, st.check, formBox, { onChange:() => { const e = $('#pFormErr'); if (e) e.textContent = ''; } });
-      if (needsInput(st.task, st.check)) { seat.form = f; const e = el('p', 'err'); e.id = 'pFormErr'; formBox.append(e); }
+      const f = buildAnswerForm(myTask, st.check, body, { songOne:st.songs === 2 && myTask.kind !== 'two', onChange:() => { const e = $('#pFormErr'); if (e) e.textContent = ''; } });
+      if (needsInput(myTask, st.check)) { seat.form = f; const e = el('p', 'err'); e.id = 'pFormErr'; body.append(e); }
     } else formBox.remove();
   }
   acts.innerHTML = '';
   const fa = $('#pFormActs'); fa.innerHTML = '';
-  if (answering && seat.form) {
-    const b = txt('button', 'btn primary', meP.answered ? 'Antwort ändern' : 'Antwort abschicken'); b.type = 'button';
+  const formBox = $('#pForm');
+  const sent = !!(meP.answered || seat.sentRound === st.round);
+  const veiled = !!(answering && seat.form && sent && !seat.unveil);
+  if (formBox) {
+    formBox.classList.toggle('on', veiled);
+    const old = formBox.querySelector('.veilbtn'); if (old) old.remove();
+    if (veiled) formBox.append(veilButton('Antwort abgeschickt ✓ Zum Ändern hier tippen.', () => { seat.unveil = true; drawBingoArea(st, meP, myTask); }));
+  }
+  if (answering && seat.form && !veiled) {
+    const b = txt('button', 'btn primary', sent ? 'Geänderte Antwort abschicken' : 'Antwort abschicken'); b.type = 'button';
     b.onclick = () => {
       const v = seat.form.val, has = Object.values(v).some(x => x !== undefined && String(x).trim() !== '');
       const err = $('#pFormErr');
       if (!has) { err.textContent = 'Gib zuerst eine Antwort ein.'; return; }
       if (v.year && !/^\d{4}$/.test(v.year)) { err.textContent = 'Das Jahr hat vier Ziffern, zum Beispiel 1987.'; return; }
       if (v.diff && !/^\d{1,3}$/.test(v.diff)) { err.textContent = 'Gib den Abstand als ganze Zahl ein.'; return; }
-      send({ t:'answer', ans:{ ...v } }); b.textContent = 'Gesendet';
+      send({ t:'answer', ans:{ ...v } }); seat.sentRound = st.round; seat.unveil = false;
+      drawBingoArea(st, meP, myTask);
     };
     fa.append(b);
   }
   if (st.cards && meP.result === 'pending') {
-    const parts = selfParts(st.task, st.check);
+    const parts = selfParts(myTask, st.check);
     const box = el('div', 'box');
     parts.forEach((k, idx) => {
       const row = el('div', 'row2' + (idx ? '' : ' first')), g = el('div', 'seg');
       for (const [v, t] of [[true, 'Ja'], [false, 'Nein']]) {
         const b = txt('button', seat.selfAns[k] === v ? 'on' : '', t); b.type = 'button';
-        b.onclick = () => { seat.selfAns[k] = v; drawBingoArea(st, meP); };
+        b.onclick = () => { seat.selfAns[k] = v; drawBingoArea(st, meP, myTask); };
         g.append(b);
       }
       row.append(txt('span', '', k === 'free' ? 'Geschafft?' : (k === 'title' ? 'Titel' : 'Künstler') + ' gewusst?'), g);
@@ -1807,7 +2258,7 @@ function drawBingoArea(st, meP){
   const gb = $('#pGridBox'); gb.innerHTML = '';
   const can = meP.canMark !== null && meP.canMark !== undefined ? meP.canMark : null;
   const head = el('div', 'tlhead');
-  head.append(txt('h2', '', 'Deine Bingokarte'), txt('span', 'muted small', (st.win === 'full' ? 'Volle Karte' : 'Eine Reihe') + ', noch ' + bingoMissing(meP.marks, st.win) + ' Felder'));
+  head.append(txt('h2', '', 'Deine Bingokarte'), txt('span', 'muted small', (WIN_NAMES[st.win] || 'Eine Reihe') + ', noch ' + bingoMissing(meP.marks, st.win) + ' Felder'));
   const grid = el('div', 'bgrid');
   meP.grid.forEach((ci, i) => {
     const c = COLORS[ci], marked = meP.marks && meP.marks[i], b = txt('button', 'cell', marked ? '✓' : ''); b.type = 'button';
@@ -1822,6 +2273,8 @@ function drawBingoArea(st, meP){
     grid.append(b);
   });
   gb.append(head, grid);
+  const lv = meP.lvl === 'adv' ? 'Fortgeschritten' : 'Normal';
+  gb.append(Object.assign(txt('p', 'muted small', 'Deine Stufe: ' + lv), { style:'margin:.5rem 0 0;text-align:center' }));
 }
 function drawOthers(r, st){
   const box = $('#pOthers'); box.innerHTML = '';
@@ -1838,25 +2291,47 @@ function drawOthers(r, st){
   box.append(ppl);
 }
 function playerTick(){
-  const st = seat.room && seat.room.state;
-  if (!st || !st.timer) return;
-  const t = st.timer, left = Math.max(0, t.end - FB.now());
+  const st = seat.room && seat.room.state, big = $('#pBig');
+  if (!st || !st.timer) { if (big.textContent) { big.textContent = ''; big.classList.remove('hurry'); } return; }
+  const t = st.timer, left = Math.max(0, t.end - FB.now()), secs = String(Math.ceil(left / 1000));
+  if (t.kind === 'next') {
+    const f = $('#pAuto .fill'), s = $('#pAuto span');
+    if (f) f.style.width = (100 * Math.min(1, 1 - left / t.total)).toFixed(1) + '%';
+    if (s) s.textContent = 'Nächste Karte in ' + secs + ' s';
+    return;
+  }
+  const choose = t.kind === 'place' || t.kind === 'answer';
   $('#pProg').style.strokeDashoffset = String(RING * Math.min(1, 1 - left / t.total));
-  $('#pCount').textContent = String(Math.ceil(left / 1000));
+  $('#pCount').textContent = choose ? '' : secs;
+  big.textContent = choose ? secs : '';
+  big.classList.toggle('hurry', choose && left > 0 && left <= 5000);
 }
 
 /* ---------- Bildschirm wach halten ---------- */
-let wakeLock = null;
+// Wake Lock, wo der Browser es kann, dazu ein unsichtbares stummes Video als Rückfallebene (ältere iPhones)
+const WAKE_VIDEO = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAAMrbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAlV0cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAABAAAAAQAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHNbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAABAAAAAgABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABeG1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAThzdGJsAAAAuHN0c2QAAAAAAAAAAQAAAKhhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAABAAEABIAAAASAAAAAAAAAABFUxhdmM2MC4zMS4xMDIgbGlieDI2NAAAAAAAAAAAAAAAGP//AAAALmF2Y0MBQsAK/+EAFmdCwArZHsBEAAADAAQAAAMACDxImSABAAVoy4PLIAAAABBwYXNwAAAAAQAAAAEAAAAUYnRydAAAAAAAAApAAAAKQAAAABhzdHRzAAAAAAAAAAEAAAACAABAAAAAABRzdHNzAAAAAAAAAAEAAAABAAAAHHN0c2MAAAAAAAAAAQAAAAEAAAACAAAAAQAAABxzdHN6AAAAAAAAAAAAAAACAAAChgAAAAoAAAAUc3RjbwAAAAAAAAABAAADWwAAAGJ1ZHRhAAAAWm1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALWlsc3QAAAAlqXRvbwAAAB1kYXRhAAAAAQAAAABMYXZmNjAuMTYuMTAwAAAACGZyZWUAAAKYbWRhdAAAAnAGBf//bNxF6b3m2Ui3lizYINkj7u94MjY0IC0gY29yZSAxNjQgcjMxMDggMzFlMTlmOSAtIEguMjY0L01QRUctNCBBVkMgY29kZWMgLSBDb3B5bGVmdCAyMDAzLTIwMjMgLSBodHRwOi8vd3d3LnZpZGVvbGFuLm9yZy94MjY0Lmh0bWwgLSBvcHRpb25zOiBjYWJhYz0wIHJlZj0zIGRlYmxvY2s9MTowOjAgYW5hbHlzZT0weDE6MHgxMTEgbWU9aGV4IHN1Ym1lPTcgcHN5PTEgcHN5X3JkPTEuMDA6MC4wMCBtaXhlZF9yZWY9MSBtZV9yYW5nZT0xNiBjaHJvbWFfbWU9MSB0cmVsbGlzPTEgOHg4ZGN0PTAgY3FtPTAgZGVhZHpvbmU9MjEsMTEgZmFzdF9wc2tpcD0xIGNocm9tYV9xcF9vZmZzZXQ9LTIgdGhyZWFkcz0xIGxvb2thaGVhZF90aHJlYWRzPTEgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MCB3ZWlnaHRwPTAga2V5aW50PTI1MCBrZXlpbnRfbWluPTEgc2NlbmVjdXQ9NDAgaW50cmFfcmVmcmVzaD0wIHJjX2xvb2thaGVhZD00MCByYz1jcmYgbWJ0cmVlPTEgY3JmPTIzLjAgcWNvbXA9MC42MCBxcG1pbj0wIHFwbWF4PTY5IHFwc3RlcD00IGlwX3JhdGlvPTEuNDAgYXE9MToxLjAwAIAAAAAOZYiEBb///w9FAAFPf4AAAAAGQZo4CvqA';
+let wakeLock = null, wakeVideo = null;
 async function keepAwake(){
+  if (document.visibilityState !== 'visible') return;
+  if ('wakeLock' in navigator && !wakeLock) {
+    try { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } catch {}
+  }
+}
+function videoAwake(){
   try {
-    const want = !$('#mgame').hidden || !$('#pplay').hidden || !$('#lobby').hidden;
-    if ('wakeLock' in navigator && want && document.visibilityState === 'visible' && !wakeLock) {
-      wakeLock = await navigator.wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    if (!wakeVideo) {
+      wakeVideo = document.createElement('video');
+      wakeVideo.setAttribute('playsinline', ''); wakeVideo.setAttribute('muted', ''); wakeVideo.setAttribute('aria-hidden', 'true');
+      wakeVideo.muted = true; wakeVideo.loop = true; wakeVideo.src = WAKE_VIDEO;
+      wakeVideo.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none';
+      document.body.append(wakeVideo);
     }
+    if (wakeVideo.paused && typeof wakeVideo.play === 'function') { const p = wakeVideo.play(); if (p && p.catch) p.catch(() => {}); }
   } catch {}
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
+// Manche Handys erlauben beides erst nach einer Berührung
+document.addEventListener('pointerdown', () => { keepAwake(); videoAwake(); }, { passive:true });
 
 /* ---------- Fehlerbehandlung ---------- */
 function handleError(e, retry){
@@ -1878,12 +2353,12 @@ function handleError(e, retry){
 function render(){
   const q = new URLSearchParams(location.search), jc = cleanCode(q.get('join'));
   const saved = store.get('join', null);
-  const hasSpotify = store.get('clientId', '') && store.get('token', null);
+  const hasSpotify = !!store.get('token', null);
   if (jc || (saved && !hasSpotify)) { startPlayer(jc, saved); return; }
   renderHost();
 }
 function renderHost(){
-  if (!store.get('clientId', '') || !store.get('token', null)) {
+  if (!store.get('token', null)) {
     $('#clientId').value = store.get('clientId', '');
     show('setup');
   } else {
@@ -1915,6 +2390,13 @@ function wire(){
   $('#toMusic').onclick = openSettings;
   $('#settingsBack').onclick = openHome;
   $('#reloadBtn').onclick = loadPlaylists;
+  $('#plSearch').oninput = renderPlaylists;
+  $('#cacheClear').onclick = () => {
+    if (!confirm('Alle gespeicherten Songs neu von Spotify einlesen? Das dauert bei großen Playlists etwas.')) return;
+    try { Object.keys(localStorage).filter(k => k.startsWith('pq.pc.')).forEach(k => localStorage.removeItem(k)); } catch {}
+    renderPlaylists(); renderSelInfo(); warmCache();
+  };
+  document.querySelectorAll('#lvlSeg button').forEach(b => b.onclick = () => { pickLevel = b.dataset.v; openColors(); });
   $('#mixSave').onclick = saveMix;
   $('#mixName').onkeydown = e => { if (e.key === 'Enter') saveMix(); };
   const s = $('#seconds'); s.value = seconds(); $('#secondsOut').textContent = seconds() + ' s';
