@@ -250,6 +250,7 @@ textarea.field{min-height:5rem;resize:vertical}
   <div class="startarea">
     <button class="btn secondary" id="resumeBtn" hidden></button>
     <button class="btn primary" id="goBtn">Spielraum öffnen</button>
+    <button class="link" id="showRoomBtn" style="justify-self:center" hidden>Spielraum mit QR-Code zeigen</button>
   </div>
 </section>
 
@@ -345,7 +346,7 @@ textarea.field{min-height:5rem;resize:vertical}
 
 <!-- Spiel am Haupthandy -->
 <section class="screen" id="mgame" hidden>
-  <div class="gamebar"><button class="link" id="mMenu">Menü</button><button class="roomlink" id="toLobby" hidden></button><span id="mInfo"></span></div>
+  <div class="gamebar"><button class="link" id="mMenu">Spiel beenden</button><button class="roomlink" id="toLobby" hidden></button><span id="mInfo"></span></div>
   <div id="mBanner"></div>
   <div class="stage">
     <div class="disc" id="mDisc">
@@ -959,7 +960,7 @@ const MODES = {
 };
 const DEFAULT_RULES = { mode:'turns', target:10, placeSecs:15, answerSecs:30, win:'line', check:'auto' };
 const rules = () => ({ ...DEFAULT_RULES, ...store.get('rules', {}) });
-const setRule = (k, v) => { store.set('rules', { ...rules(), [k]:v }); renderHome(); };
+const setRule = (k, v) => { store.set('rules', { ...rules(), [k]:v }); renderHome(); if (!M) pushState(); };
 const running = () => !!(M && M.phase !== 'over');
 
 function openHome(){
@@ -1005,14 +1006,17 @@ function renderHome(){
   if (r.mode === 'turns' || r.mode === 'together') box.append(txt('p', 'muted small', 'Ein gleiches Jahr wie die Nachbarkarte zählt als richtig.'));
   if (r.mode === 'together') box.lastChild.textContent += ' Erreichen mehrere in derselben Runde das Ziel, gewinnen sie gemeinsam.';
   if (r.mode === 'solo') box.append(txt('p', 'muted small', 'Keine Regeln. Du ziehst Karten, hörst und drehst um.'));
-  $('#goBtn').textContent = r.mode === 'solo' ? 'Spiel starten' : room.code ? 'Spielraum ' + room.code + ' öffnen' : 'Spielraum öffnen';
+  const on = room.code ? onlineKeys().size : 0;
+  $('#goBtn').textContent = r.mode === 'solo' ? 'Spiel starten' : on ? 'Spiel starten mit ' + on + (on === 1 ? ' Spieler' : ' Spielern') : room.code ? 'Spielraum ' + room.code + ' öffnen' : 'Spielraum öffnen';
+  $('#showRoomBtn').hidden = !room.code || r.mode === 'solo' || !on;
+  $('#showRoomBtn').textContent = 'Spielraum ' + (room.code || '') + ' mit QR-Code zeigen';
   const saved = store.get('match', null), rb = $('#resumeBtn');
   rb.hidden = !(saved && saved.phase !== 'over' && saved.deck && saved.deck.cards && saved.deck.cards.length);
   if (!rb.hidden) rb.textContent = 'Weiterspielen: ' + MODES[saved.mode].name + ', Runde ' + saved.round;
 }
 function goFromHome(){
   if (!validSelection().length) { toast(playlists.length ? 'Wähle unter Musik zuerst mindestens eine Playlist.' : 'Playlists werden noch geladen.'); return; }
-  if (rules().mode === 'solo') startMatch(); else openLobby();
+  if (rules().mode === 'solo' || (room.code && onlineKeys().size)) startMatch(); else openLobby();
 }
 
 /* ---------- Bingo-Farben, Aufgabenauswahl, Baukasten ---------- */
@@ -1129,7 +1133,7 @@ async function ensureRoom(){
   room.code = code; store.set('room', code);
   if (room.unsub) room.unsub();
   if (room.aunsub) room.aunsub();
-  room.unsub = FB.on('rooms/' + code + '/players', v => { room.players = v || {}; tidyPlayers(); syncPlayers(); drawLobby(); });
+  room.unsub = FB.on('rooms/' + code + '/players', v => { room.players = v || {}; tidyPlayers(); syncPlayers(); drawLobby(); if (!$('#home').hidden) renderHome(); });
   room.aunsub = FB.on('rooms/' + code + '/actions', v => onActions(v || {}));
   pushState();
   return code;
@@ -1416,16 +1420,15 @@ async function replay(){
 }
 function soloFlip(){ if (M && M.phase === 'stopped') { M.phase = 'reveal'; M.revealed = true; saveMatch(); pushState(); renderMatch(); } }
 function endMatchToHome(){
-  if (running() && M.round && !confirm('Zurück ins Menü? Das Spiel bleibt gespeichert, du kannst später weiterspielen.')) return;
+  if (running() && M.round && !confirm('Spiel beenden? Der Spielstand wird gelöscht. Die Mitspieler bleiben im Spielraum.')) return;
   stopClip();
-  if (M && (M.phase === 'over' || !M.round)) store.del('match');
-  M = null;
+  store.del('match'); M = null;
   pushState();
   openHome();
 }
-function newGameSameRoom(){
+function playAgain(){
   stopClip(); M = null; store.del('match'); pushState();
-  if (room.code) openLobby(); else openHome();
+  if (rules().mode === 'solo' || (room.code && onlineKeys().size)) startMatch(); else openHome();
 }
 
 /* Aktionen der Spielerhandys */
@@ -1551,7 +1554,7 @@ function renderMatch(){
     btn(M.mode === 'turns' ? 'Weiter mit ' + name(nextTurn(M.turn, false)) : M.mode === 'bingo' ? 'Nächste Runde' : 'Nächste Karte', nextRound, true);
     if (!replaying) btn('Nochmal hören', replay, false);
   }
-  if (M.phase === 'over') { btn('Neues Spiel', newGameSameRoom, true); btn('Zum Menü', endMatchToHome, false); }
+  if (M.phase === 'over') { btn('Nochmal spielen', playAgain, true); btn('Zum Hauptmenü', endMatchToHome, false); }
   renderBoard();
 }
 function renderBoard(){
@@ -1919,6 +1922,7 @@ function wire(){
   $('#devReload').onclick = loadDevices;
   $('#devSelect').onchange = e => { const o = e.target.selectedOptions[0]; if (o && o.value) store.set('device', { id:o.value, name:o.textContent.replace(/ \(gerade nicht erreichbar\)$/, '') }); };
   $('#goBtn').onclick = goFromHome;
+  $('#showRoomBtn').onclick = openLobby;
   $('#resumeBtn').onclick = resumeMatch;
   $('#colorsBack').onclick = openHome;
   $('#pickBack').onclick = openColors;
