@@ -12,12 +12,12 @@
 <style>
 :root{
   --bg:#1E0C27;--surface:#2C1538;--text:#F8EEFB;--muted:#BBA3C4;--line:#4A2B58;
-  --accent:#FF4F97;--on-accent:#1A0820;--card-text:#1A0820;
+  --accent:#FF4F97;--on-accent:#1A0820;--card-text:#1A0820;--ok:#4ED18A;--bad:#FF8A8A;
   --head:"Unbounded",system-ui,sans-serif;--body:"Figtree",system-ui,-apple-system,sans-serif;
   color-scheme:dark;
 }
 @media (prefers-color-scheme:light){
-  :root{--bg:#F7EEF6;--surface:#FFFFFF;--text:#2A1033;--muted:#6B5573;--line:#E1CFE0;--accent:#D81B66;color-scheme:light}
+  :root{--bg:#F7EEF6;--surface:#FFFFFF;--text:#2A1033;--muted:#6B5573;--line:#E1CFE0;--accent:#D81B66;--ok:#1E8A55;--bad:#C0304A;color-scheme:light}
 }
 *,*::before,*::after{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:var(--bg)}
@@ -32,7 +32,7 @@ p{margin:0 0 .9rem}
 .muted{color:var(--muted)}
 .small{font-size:.9rem}
 a{color:var(--accent)}
-button,input,select{font:inherit;color:inherit}
+button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;touch-action:manipulation}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .btn{display:block;width:100%;border:0;border-radius:16px;padding:1rem 1.2rem;font-weight:700;font-size:1.08rem}
@@ -41,18 +41,24 @@ button{cursor:pointer;touch-action:manipulation}
 .btn:disabled{opacity:.55;cursor:default}
 .link{background:none;border:0;padding:.4rem 0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;font-size:.95rem}
 .field{width:100%;padding:.8rem .9rem;border-radius:12px;border:2px solid var(--line);background:var(--surface)}
+textarea.field{min-height:5rem;resize:vertical}
 .box{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:1rem;margin-top:1rem}
 .boxhead{display:flex;justify-content:space-between;align-items:center;gap:.75rem;margin-bottom:.6rem}
 .stack{display:grid;gap:.6rem}
 .copy{display:flex;gap:.5rem}
 .copy code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;background:var(--bg);border-radius:10px;padding:.55rem .7rem;font-size:.85rem}
 .copy button{border:0;border-radius:10px;padding:.5rem .8rem;background:var(--accent);color:var(--on-accent);font-weight:700}
-ol.steps{margin:.4rem 0 0;padding-left:1.2rem;color:var(--muted)}
-ol.steps li{margin-bottom:.4rem}
-
-/* Einstellungen */
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:1rem}
 .topbar h1{font-size:1.6rem;margin:.4rem 0}
+.startarea{margin-top:1.2rem;display:grid;gap:.6rem}
+.row2{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.55rem 0;border-top:1px solid var(--line)}
+.row2.first{border-top:0}
+.row2 select{width:auto;padding:.45rem .6rem;border-radius:10px;border:2px solid var(--line);background:var(--bg)}
+.seg{display:flex;background:var(--bg);border-radius:12px;padding:3px;gap:3px}
+.seg button{border:0;background:none;border-radius:9px;padding:.45rem .7rem;font-weight:600;font-size:.92rem;color:var(--muted)}
+.seg button.on{background:var(--accent);color:var(--on-accent)}
+
+/* Musik */
 .pl{display:flex;align-items:center;gap:.75rem;padding:.6rem 0;border-top:1px solid var(--line)}
 .pl:first-child{border-top:0}
 .pl input{width:22px;height:22px;accent-color:var(--accent);flex:none}
@@ -71,56 +77,138 @@ ol.steps li{margin-bottom:.4rem}
 .range{display:flex;align-items:center;gap:1rem}
 .range input{flex:1;accent-color:var(--accent)}
 .range output{font-family:var(--head);font-weight:700;min-width:3.5rem;text-align:right}
-.startarea{margin-top:1.2rem;display:grid;gap:.6rem}
 
-/* Spiel */
-.gamebar{display:flex;justify-content:space-between;align-items:center;gap:1rem;min-height:2.6rem;color:var(--muted);font-size:.95rem}
-.stage{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1rem 0;min-height:22rem}
-.disc{--d:min(72vw,290px);position:relative;width:var(--d);height:var(--d)}
+/* Hauptmenü */
+.musicbtn{display:block;width:100%;text-align:left}
+.modes{display:grid;gap:.5rem}
+.mode{text-align:left;border:2px solid var(--line);background:none;border-radius:14px;padding:.75rem .9rem}
+.mode b{display:block;font-weight:700}
+.mode span{display:block;color:var(--muted);font-size:.88rem}
+.mode.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.swatches{display:flex;gap:6px}
+.sw{width:22px;height:22px;border-radius:50%;flex:none}
+.linkrow{width:100%;background:none;border:0;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.7rem 0}
+.colorrow{display:flex;align-items:center;gap:.8rem;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:.8rem 0}
+.colorrow:first-child{border-top:0}
+.colorrow .sw{width:30px;height:30px}
+.colorrow .cn{font-weight:700;min-width:3.4rem}
+.colorrow .tn{flex:1;color:var(--muted)}
+.picklist{display:grid}
+.pick{display:flex;align-items:center;gap:.6rem;width:100%;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:.75rem 0}
+.pick:first-child{border-top:0}
+.pick .pn{flex:1;font-weight:600}
+.pick .pt{font-size:.85rem;color:var(--muted)}
+.pick.cur .pn{color:var(--accent)}
+.pick .del{color:var(--muted);font-size:1.3rem;padding:0 .4rem}
+.sub{font-family:var(--head);font-size:.85rem;color:var(--muted);margin:1rem 0 .2rem}
+
+/* Platte und Karten */
+.gamebar{display:flex;justify-content:space-between;align-items:center;gap:.8rem;min-height:2.6rem;color:var(--muted);font-size:.95rem}
+.stage{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.6rem 0}
+.disc{--d:min(62vw,250px);position:relative;width:var(--d);height:var(--d)}
+.disc.mini{--d:64px;flex:none}
 .ring{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
 .ring circle{fill:none;stroke-width:3}
 .ring .track{stroke:var(--line)}
 .ring .prog{stroke:var(--accent);stroke-linecap:round;stroke-dasharray:289.03;stroke-dashoffset:0}
+.ring .prog.alt{stroke:#FFD23D}
 .record{position:absolute;inset:8%;border-radius:50%;
   background:radial-gradient(circle,var(--bg) 0 3%,var(--accent) 3.5% 30%,transparent 30.5%),
              repeating-radial-gradient(circle,#140818 0 2px,#22102a 2px 4px);
-  box-shadow:0 14px 34px rgba(0,0,0,.35)}
+  box-shadow:0 10px 26px rgba(0,0,0,.35)}
 .record::after{content:"";position:absolute;inset:0;border-radius:50%;
   background:conic-gradient(from 30deg,transparent 0 40deg,rgba(255,255,255,.12) 55deg,transparent 75deg 220deg,rgba(255,255,255,.07) 235deg,transparent 255deg)}
 .record.spin{animation:spin 2.2s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.count{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:2.2rem;color:var(--on-accent);pointer-events:none}
-.status{text-align:center;margin:1.1rem 0 0;font-weight:600;font-size:1.15rem;min-height:1.6rem}
-.card{width:min(84vw,320px);aspect-ratio:1/1.12;border-radius:26px;padding:1.4rem;color:var(--card-text);
-  display:flex;flex-direction:column;justify-content:center;text-align:center;box-shadow:0 14px 34px rgba(0,0,0,.3);
+.count{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:2rem;color:var(--on-accent);pointer-events:none}
+.disc.mini .count{font-size:.95rem}
+.status{text-align:center;margin:.8rem 0 0;font-weight:600;font-size:1.1rem;min-height:1.5rem}
+.cards{display:flex;gap:.7rem;justify-content:center;width:100%}
+.card{flex:1;max-width:320px;border-radius:24px;padding:1.2rem 1rem;color:var(--card-text);
+  display:flex;flex-direction:column;justify-content:center;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.3);
   animation:flip .5s cubic-bezier(.2,.8,.3,1.15)}
 @keyframes flip{from{transform:perspective(900px) rotateY(-90deg)}to{transform:none}}
-.card .year{font-family:var(--head);font-weight:800;font-size:clamp(4rem,22vw,5.5rem);line-height:1;letter-spacing:-.04em;margin:0 0 .8rem}
-.card .title{font-weight:700;font-size:1.35rem;line-height:1.2;margin:0 0 .3rem;overflow-wrap:anywhere}
-.card .artist{font-weight:600;font-size:1.1rem;margin:0 0 .9rem;overflow-wrap:anywhere}
-.card .album{font-size:.88rem;opacity:.75;margin:0;overflow-wrap:anywhere}
-.actions{display:grid;gap:.6rem}
+.card .no{font-size:.8rem;font-weight:700;opacity:.7;margin:0 0 .2rem}
+.card .year{font-family:var(--head);font-weight:800;font-size:clamp(3rem,18vw,4.6rem);line-height:1;letter-spacing:-.04em;margin:0 0 .6rem}
+.cards.two .card .year{font-size:clamp(2.2rem,11vw,3rem)}
+.card .title{font-weight:700;font-size:1.2rem;line-height:1.2;margin:0 0 .25rem;overflow-wrap:anywhere}
+.cards.two .card .title{font-size:1rem}
+.card .artist{font-weight:600;font-size:1rem;margin:0 0 .6rem;overflow-wrap:anywhere}
+.card .album{font-size:.82rem;opacity:.75;margin:0;overflow-wrap:anywhere}
+.actions{display:grid;gap:.6rem;margin-top:1rem}
+
+/* Banner, Liste, Ergebnisse */
+.banner{border-radius:18px;padding:.8rem 1rem;text-align:center;margin:.3rem 0}
+.banner .bc{font-family:var(--head);font-weight:800;font-size:1.3rem}
+.banner .bt{font-weight:700}
+.banner.plain{background:var(--surface);border:1px solid var(--line)}
+.banner.plain .bc{font-size:1.1rem}
+.board{display:grid;gap:.4rem;margin-top:.8rem}
+.prow{display:flex;align-items:center;gap:.6rem;background:var(--surface);border-radius:12px;padding:.55rem .8rem}
+.prow .pn{flex:1;font-weight:600;overflow-wrap:anywhere}
+.prow .ps{font-family:var(--head);font-size:.85rem;white-space:nowrap}
+.prow .pi{font-size:.85rem;color:var(--muted);text-align:right}
+.prow.turn{box-shadow:inset 0 0 0 2px var(--accent)}
+.prow.off{opacity:.55}
+.ok{color:var(--ok)}
+.bad{color:var(--bad)}
+.result{border-radius:14px;padding:.75rem;text-align:center;font-weight:700;margin:.6rem 0}
+.result.good{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.result.no{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.result.info{background:var(--surface);color:var(--text)}
+
+/* Zeitstrahl */
+.tl{display:grid;gap:6px;margin-top:.6rem}
+.tlc{border-radius:12px;padding:.5rem .8rem;color:var(--card-text);display:flex;align-items:center;gap:.8rem}
+.tlc .ty{font-family:var(--head);font-weight:800;font-size:1.15rem;flex:none}
+.tlc .tt{font-size:.82rem;line-height:1.25;font-weight:600;overflow-wrap:anywhere}
+.tlc .tt span{font-weight:400}
+.tlc.new{box-shadow:0 0 0 3px var(--text)}
+.gap{border:2px dashed var(--line);background:none;border-radius:12px;min-height:34px;color:var(--muted);font-size:.8rem;font-weight:600}
+.gap.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent);min-height:44px}
+.gap:disabled{cursor:default;min-height:12px;border-color:transparent}
+.gap.end:disabled{min-height:22px;border-color:var(--line)}
+.tlhead{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;margin-top:1rem}
+
+/* Bingo */
+.bgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:.8rem}
+.cell{aspect-ratio:1;border-radius:10px;border:0;display:grid;place-items:center;font-family:var(--head);font-weight:800;font-size:1.25rem}
+.cell.dim{opacity:.28}
+.cell.pickme{box-shadow:0 0 0 3px var(--text)}
+.cell:disabled{cursor:default}
+.ans{display:grid;gap:.7rem}
+.ans label{font-weight:600;display:block;margin-bottom:.3rem}
+.ans .hint{font-size:.85rem;color:var(--muted);margin:0}
+.btngrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.btngrid.two{grid-template-columns:1fr 1fr}
+.btngrid button{border:2px solid var(--line);background:none;border-radius:10px;padding:.5rem .2rem;font-weight:600;font-size:.85rem}
+.btngrid button.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.err{color:var(--bad);font-size:.92rem;margin:.2rem 0 0;min-height:1.2rem}
+.preview{border:2px dashed var(--line);border-radius:18px;padding:1rem;margin-top:.6rem}
 
 /* Spielraum */
-.qr{background:#fff;border-radius:22px;padding:14px;width:min(70vw,250px);margin:.5rem auto 0}
+.qr{background:#fff;border-radius:22px;padding:14px;width:min(64vw,230px);margin:.5rem auto 0}
 .qr svg{display:block;width:100%;height:auto}
 .roomcode{text-align:center;margin:1rem 0 .2rem}
 .roomcode .label{color:var(--muted);font-size:.9rem}
 .roomcode .code{font-family:var(--head);font-weight:800;font-size:2.6rem;letter-spacing:.14em;line-height:1.1}
 .people{display:flex;flex-wrap:wrap;gap:.5rem}
-.person{display:inline-flex;align-items:center;gap:.45rem;border:2px solid var(--line);border-radius:999px;padding:.3rem .8rem;font-weight:600}
-.person::before{content:"";width:9px;height:9px;border-radius:50%;background:#4ED18A}
+.person{display:inline-flex;align-items:center;gap:.45rem;border:2px solid var(--line);border-radius:999px;padding:.3rem .8rem;font-weight:600;background:none}
+.person::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--ok)}
 .person.off{opacity:.55}
 .person.off::before{background:var(--muted)}
 .person.me{border-color:var(--accent)}
 .roomlink{background:none;border:0;padding:.4rem 0;color:var(--muted);font-size:.95rem;text-decoration:underline;text-underline-offset:3px}
-.err{color:#FF8A8A;font-size:.92rem;margin:.2rem 0 0;min-height:1.2rem}
 .codefield{font-family:var(--head);font-weight:700;letter-spacing:.15em;text-transform:uppercase}
-.wait{text-align:center;color:var(--muted);max-width:22rem;margin:0 auto}
+.wait{text-align:center;color:var(--muted);max-width:22rem;margin:1rem auto}
+.mini-status{display:flex;align-items:center;gap:.8rem;background:var(--surface);border-radius:14px;padding:.6rem .8rem;margin-top:.4rem}
+.mini-status .st{flex:1;font-weight:600}
+.win{text-align:center;padding:1rem 0}
+.win .wt{font-family:var(--head);font-weight:800;font-size:1.8rem;line-height:1.15}
 
 /* Meldungen */
 .overlay{position:fixed;inset:0;background:rgba(10,3,14,.65);display:grid;place-items:end center;padding:1rem;z-index:20}
-.sheet{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:1.3rem;width:100%;max-width:28rem;margin-bottom:env(safe-area-inset-bottom,0)}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:1.3rem;width:100%;max-width:28rem;margin-bottom:env(safe-area-inset-bottom,0);max-height:85vh;overflow-y:auto}
 .toast{position:fixed;left:50%;bottom:calc(1rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);
   background:var(--text);color:var(--bg);padding:.7rem 1rem;border-radius:12px;max-width:calc(100% - 2rem);z-index:30;font-size:.95rem}
 @media (prefers-reduced-motion:reduce){.record.spin,.card{animation:none}}
@@ -147,15 +235,32 @@ ol.steps li{margin-bottom:.4rem}
   </div>
 </section>
 
-<!-- Einstellungen -->
-<section class="screen" id="settings" hidden>
+<!-- Hauptmenü (Haupthandy) -->
+<section class="screen" id="home" hidden>
   <div class="topbar"><h1>P-Quiz</h1><button class="link" id="logoutBtn">Abmelden</button></div>
-
+  <button class="box musicbtn" id="toMusic" type="button">
+    <span class="boxhead" style="margin:0"><h2>Musik und Abspielgerät</h2><span class="muted">›</span></span>
+    <span class="muted small" id="musicInfo" style="display:block;margin-top:.3rem"></span>
+  </button>
   <div class="box">
-    <div class="boxhead"><h2>Musik</h2><button class="link" id="reloadBtn">Neu laden</button></div>
-    <div class="pllist" id="plList"><p class="muted">Playlists werden geladen …</p></div>
+    <h2 style="margin-bottom:.7rem">Spielmodus</h2>
+    <div class="modes" id="modeList"></div>
   </div>
+  <div class="box" id="rulesBox"></div>
+  <div class="startarea">
+    <button class="btn secondary" id="resumeBtn" hidden></button>
+    <button class="btn primary" id="goBtn">Spielraum öffnen</button>
+  </div>
+</section>
 
+<!-- Musik und Abspielgerät -->
+<section class="screen" id="settings" hidden>
+  <div class="topbar"><h1>Musik</h1><button class="link" id="settingsBack">Fertig</button></div>
+  <div class="box">
+    <div class="boxhead"><h2>Playlists</h2><button class="link" id="reloadBtn">Neu laden</button></div>
+    <div class="pllist" id="plList"><p class="muted">Playlists werden geladen …</p></div>
+    <p class="muted small" id="selInfo" style="margin:.6rem 0 0"></p>
+  </div>
   <div class="box">
     <h2 style="margin-bottom:.6rem">Mischungen</h2>
     <div class="chips" id="mixList"></div>
@@ -164,30 +269,67 @@ ol.steps li{margin-bottom:.4rem}
       <button id="mixSave" type="button">Speichern</button>
     </div>
   </div>
-
   <div class="box">
     <h2 style="margin-bottom:.4rem">Hörzeit</h2>
     <div class="range"><input type="range" id="seconds" min="1" max="60" step="1"><output id="secondsOut"></output></div>
   </div>
-
   <div class="box">
     <div class="boxhead"><h2>Abspielgerät</h2><button class="link" id="devReload">Suchen</button></div>
     <select class="field" id="devSelect"></select>
     <p class="muted small" style="margin:.6rem 0 0">Fehlt dein Handy oder Lautsprecher? Öffne dort Spotify, spiel kurz etwas an und tippe auf Suchen.</p>
   </div>
+</section>
 
-  <div class="startarea">
-    <p class="muted small" id="selInfo" style="margin:0;text-align:center"></p>
-    <button class="btn primary" id="roomBtn">Spielraum öffnen</button>
-    <button class="btn secondary" id="resumeBtn" hidden>Weiterspielen</button>
-    <button class="link" id="startBtn" style="justify-self:center">Ohne Mitspieler spielen</button>
+<!-- Bingo-Farben -->
+<section class="screen" id="colors" hidden>
+  <div class="topbar"><h1>Bingo-Farben</h1><button class="link" id="colorsBack">Fertig</button></div>
+  <p class="muted" style="margin:0">Tippe eine Farbe an und wähle, was sie abfragt.</p>
+  <div class="box" id="colorList"></div>
+</section>
+
+<!-- Aufgabe wählen -->
+<section class="screen" id="picker" hidden>
+  <div class="topbar"><h1 id="pickTitle">Aufgabe</h1><button class="link" id="pickBack">Zurück</button></div>
+  <div class="box picklist" id="pickList"></div>
+  <div class="startarea"><button class="btn secondary" id="newTaskBtn">Eigene Aufgabe anlegen</button></div>
+</section>
+
+<!-- Baukasten -->
+<section class="screen" id="builder" hidden>
+  <div class="topbar"><h1>Eigene Aufgabe</h1><button class="link" id="buildBack">Abbrechen</button></div>
+  <div class="box stack">
+    <label for="bName"><strong>Name</strong></label>
+    <input class="field" id="bName" maxlength="40" placeholder="Zum Beispiel: Jahr ± 5">
+    <strong>Art</strong>
+    <div class="seg" id="bKind"><button type="button" data-v="one" class="on">1 Song</button><button type="button" data-v="two">2 Songs</button><button type="button" data-v="free">Frei</button></div>
+    <div id="bOne">
+      <div class="row2 first"><span>Baustein 1</span><select id="bP1"></select></div>
+      <div class="row2" id="bT1row"><span>Toleranz</span><select id="bT1"></select></div>
+      <div class="row2"><span>Baustein 2</span><select id="bP2"></select></div>
+      <div class="row2" id="bT2row"><span>Toleranz</span><select id="bT2"></select></div>
+      <div class="row2" id="bJoinRow"><span>Verknüpfung</span><div class="seg" id="bJoin"><button type="button" data-v="and" class="on">und</button><button type="button" data-v="or">oder</button></div></div>
+    </div>
+    <div id="bTwo" hidden>
+      <div class="row2 first"><span>Frage</span><select id="bTwoK"><option value="older">Welcher ist älter?</option><option value="younger">Welcher ist jünger?</option><option value="diff">Abstand in Jahren</option></select></div>
+      <div class="row2" id="bTTrow"><span>Toleranz</span><select id="bTT"></select></div>
+    </div>
+    <div id="bFree" class="stack" hidden>
+      <label for="bText"><strong>Aufgabentext</strong></label>
+      <textarea class="field" id="bText" maxlength="160" placeholder="Sing den Refrain mit"></textarea>
+    </div>
+    <p class="err" id="bErr" aria-live="polite"></p>
   </div>
+  <div class="box">
+    <h2>So sehen es die Spieler</h2>
+    <div class="preview" id="bPreview"></div>
+  </div>
+  <div class="startarea"><button class="btn primary" id="bSave">Aufgabe speichern</button></div>
 </section>
 
 <!-- Spielraum (Haupthandy) -->
 <section class="screen" id="lobby" hidden>
-  <div class="topbar"><h1>Spielraum</h1><button class="link" id="lobbySettings">Einstellungen</button></div>
-  <p class="muted" style="margin:0">Scannt den Code mit der Handykamera oder öffnet P-Quiz und gebt den Raumcode ein.</p>
+  <div class="topbar"><h1>Spielraum</h1><button class="link" id="lobbyBack">Menü</button></div>
+  <p class="muted" style="margin:0"><span id="lobbyMode"></span>. Scannt den Code mit der Handykamera oder gebt den Raumcode ein.</p>
   <div class="qr" id="qrBox"></div>
   <div class="roomcode"><div class="label">Raumcode</div><div class="code" id="roomCode">····</div></div>
   <div class="box">
@@ -199,6 +341,24 @@ ol.steps li{margin-bottom:.4rem}
     <button class="btn primary" id="lobbyStart">Spiel starten</button>
     <button class="link" id="closeRoom" style="justify-self:center">Spielraum schließen</button>
   </div>
+</section>
+
+<!-- Spiel am Haupthandy -->
+<section class="screen" id="mgame" hidden>
+  <div class="gamebar"><button class="link" id="mMenu">Menü</button><button class="roomlink" id="toLobby" hidden></button><span id="mInfo"></span></div>
+  <div id="mBanner"></div>
+  <div class="stage">
+    <div class="disc" id="mDisc">
+      <svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="46"/><circle class="prog" id="mProg" cx="50" cy="50" r="46"/></svg>
+      <div class="record" id="mRecord"></div>
+      <div class="count" id="mCount"></div>
+    </div>
+    <div class="cards" id="mCards" hidden></div>
+    <p class="status" id="mStatus" aria-live="polite"></p>
+  </div>
+  <div id="mResult"></div>
+  <div class="actions" id="mActions"></div>
+  <div class="board" id="mBoard"></div>
 </section>
 
 <!-- Beitreten (Spielerhandy) -->
@@ -217,57 +377,25 @@ ol.steps li{margin-bottom:.4rem}
   <button class="link" id="toHost" style="margin-top:auto;justify-self:start">Ich bin das Haupthandy</button>
 </section>
 
-<!-- Spiel (Spielerhandy) -->
+<!-- Spiel am Spielerhandy -->
 <section class="screen" id="pplay" hidden>
   <div class="gamebar"><span id="pRoomInfo"></span><button class="link" id="leaveBtn">Verlassen</button></div>
-  <div class="stage">
-    <div id="pWait" class="wait"></div>
-    <div id="pBack">
-      <div class="disc">
-        <svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="46"/><circle class="prog" id="pProg" cx="50" cy="50" r="46"/></svg>
-        <div class="record" id="pRecord"></div>
-        <div class="count" id="pCount"></div>
-      </div>
+  <div id="pBanner"></div>
+  <div class="mini-status" id="pMini" hidden>
+    <div class="disc mini">
+      <svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="46"/><circle class="prog" id="pProg" cx="50" cy="50" r="46"/></svg>
+      <div class="record" id="pRecord"></div>
+      <div class="count" id="pCount"></div>
     </div>
-    <article class="card" id="pFront" hidden>
-      <p class="year" id="pYear"></p>
-      <p class="title" id="pTitle"></p>
-      <p class="artist" id="pArtist"></p>
-      <p class="album" id="pAlbum"></p>
-    </article>
-    <p class="status" id="pStatus" aria-live="polite"></p>
+    <div class="st" id="pStatus"></div>
   </div>
-  <div class="people" id="pPeople"></div>
+  <div id="pWait" class="wait" hidden></div>
+  <div class="cards" id="pCards" hidden style="margin-top:.8rem"></div>
+  <div id="pResult"></div>
+  <div id="pMain"></div>
+  <div class="actions" id="pActions"></div>
+  <div id="pOthers" style="margin-top:1.2rem"></div>
   <button class="btn primary" id="rejoinBtn" hidden style="margin-top:1rem">Neu beitreten</button>
-</section>
-
-<!-- Spiel -->
-<section class="screen" id="game" hidden>
-  <div class="gamebar"><button class="link" id="toSettings">Einstellungen</button><button class="roomlink" id="toLobby" hidden></button><span id="deckInfo"></span></div>
-  <div class="stage">
-    <div id="back">
-      <div class="disc">
-        <svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="46"/><circle class="prog" id="prog" cx="50" cy="50" r="46"/></svg>
-        <div class="record" id="record"></div>
-        <div class="count" id="count"></div>
-      </div>
-    </div>
-    <article class="card" id="front" hidden>
-      <p class="year" id="fYear"></p>
-      <p class="title" id="fTitle"></p>
-      <p class="artist" id="fArtist"></p>
-      <p class="album" id="fAlbum"></p>
-    </article>
-    <p class="status" id="status" aria-live="polite"></p>
-  </div>
-  <div class="actions">
-    <button class="btn primary" data-when="ready" id="drawBtn">Karte ziehen</button>
-    <button class="btn primary" data-when="loading" disabled>Einen Moment …</button>
-    <button class="btn secondary" data-when="playing" id="stopBtn">Stopp</button>
-    <button class="btn primary" data-when="stopped" id="flipBtn">Karte umdrehen</button>
-    <button class="btn primary" data-when="revealed" id="nextBtn">Nächste Karte</button>
-    <button class="btn secondary" data-when="stopped revealed" id="againBtn">Nochmal hören</button>
-  </div>
 </section>
 </main>
 
@@ -276,6 +404,12 @@ ol.steps li{margin-bottom:.4rem}
     <p id="msgText" style="margin:0 0 .4rem"></p>
     <button class="btn primary" id="msgRetry">Nochmal versuchen</button>
     <button class="btn secondary" id="msgClose">Schließen</button>
+  </div>
+</div>
+<div class="overlay" id="peek" hidden role="dialog" aria-modal="true" aria-labelledby="peekTitle">
+  <div class="sheet">
+    <div class="boxhead"><h2 id="peekTitle"></h2><button class="link" id="peekClose">Schließen</button></div>
+    <div id="peekBody"></div>
   </div>
 </div>
 <div class="toast" id="toast" hidden role="status"></div>
@@ -287,6 +421,9 @@ const SCOPES = 'streaming user-read-email user-read-private user-read-playback-s
 const SDK_NAME = 'P-Quiz (dieser Browser)';
 const $ = s => document.querySelector(s);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
+const txt = (tag, cls, text) => { const e = el(tag, cls); e.textContent = text; return e; };
 
 /* ---------- Firebase (Verbindung zwischen den Handys) ---------- */
 const FIREBASE_CONFIG = {
@@ -334,10 +471,12 @@ function makeFirebase(){
   return api;
 }
 const FB = window.PQ_FB || makeFirebase();
+const fbNow = () => FB.uid ? FB.now() : Date.now();
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const newCode = () => Array.from(crypto.getRandomValues(new Uint8Array(4)), b => CODE_CHARS[b % CODE_CHARS.length]).join('');
 const cleanCode = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
 const joinUrl = code => location.origin + location.pathname + '?join=' + code;
+const nameKey = n => String(n || '').trim().toLowerCase().replace(/[.#$\[\]\/\s]+/g, '_') || '_';
 function fbFail(e){
   console.error(e);
   return 'Keine Verbindung zum Spielraum. Prüfe das Internet und versuch es nochmal.';
@@ -351,9 +490,9 @@ const store = {
 };
 const redirectUri = () => location.origin + location.pathname;
 
-function show(id){ document.querySelectorAll('.screen').forEach(s => s.hidden = s.id !== id); scrollTo(0, 0); }
+function show(id){ document.querySelectorAll('.screen').forEach(s => s.hidden = s.id !== id); scrollTo(0, 0); keepAwake(); }
 let toastT;
-function toast(t){ const el = $('#toast'); el.textContent = t; el.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => el.hidden = true, 4000); }
+function toast(t){ const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => e.hidden = true, 4000); }
 let retryFn = null;
 function showMsg(text, retry){
   $('#msgText').textContent = text; retryFn = retry || null;
@@ -366,6 +505,7 @@ class ApiError extends Error {
   constructor(status, msg, reason){ super(msg || ('Spotify meldet Fehler ' + status)); this.status = status; this.reason = reason || ''; }
 }
 class UserError extends Error {}
+class SkipError extends Error {}
 
 /* ---------- Anmeldung mit PKCE ---------- */
 function b64url(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); }
@@ -449,8 +589,9 @@ function loadSdk(){
   const s = document.createElement('script'); s.id = 'sdk'; s.src = 'https://sdk.scdn.co/spotify-player.js'; s.async = true;
   document.head.appendChild(s);
 }
+const activateSdk = () => { if (sdkPlayer && sdkPlayer.activateElement) { try { sdkPlayer.activateElement(); } catch {} } };
 
-/* ---------- Einstellungen ---------- */
+/* ---------- Musik-Einstellungen ---------- */
 let me = null, playlists = [];
 const ownsPl = p => p.collaborative || (p.owner && me && p.owner.id === me.id);
 const plTotal = p => (p.items && p.items.total) ?? (p.tracks && p.tracks.total) ?? 0;
@@ -462,11 +603,11 @@ async function loadPlaylists(){
     const all = []; let next = '/me/playlists?limit=50';
     while (next) { const page = await api(next); all.push(...((page && page.items) || []).filter(Boolean)); next = page && page.next; }
     playlists = all;
-    renderPlaylists(); renderMixes(); renderSelInfo();
+    renderPlaylists(); renderMixes(); renderSelInfo(); renderMusicInfo();
   } catch (e) { handleError(e, loadPlaylists); $('#plList').innerHTML = '<p class="muted">Playlists konnten nicht geladen werden.</p>'; }
 }
 function selected(){ return new Set(store.get('selected', [])); }
-function setSelected(set){ store.set('selected', [...set]); renderPlaylists(); renderMixes(); renderSelInfo(); }
+function setSelected(set){ store.set('selected', [...set]); renderPlaylists(); renderMixes(); renderSelInfo(); renderMusicInfo(); }
 function renderPlaylists(){
   const box = $('#plList'), sel = selected();
   box.innerHTML = '';
@@ -474,25 +615,29 @@ function renderPlaylists(){
   const sorted = [...playlists].sort((a, b) => (ownsPl(b) - ownsPl(a)) || a.name.localeCompare(b.name, 'de'));
   for (const p of sorted) {
     const own = ownsPl(p);
-    const row = document.createElement('label'); row.className = 'pl' + (own ? '' : ' foreign');
+    const row = el('label', 'pl' + (own ? '' : ' foreign'));
     const cb = document.createElement('input'); cb.type = 'checkbox'; cb.disabled = !own; cb.checked = own && sel.has(p.id);
     cb.onchange = () => { const s = selected(); cb.checked ? s.add(p.id) : s.delete(p.id); setSelected(s); };
-    const txt = document.createElement('div');
-    const nm = document.createElement('div'); nm.className = 'name'; nm.textContent = p.name;
-    const mt = document.createElement('div'); mt.className = 'meta';
-    mt.textContent = own ? plTotal(p) + ' Songs' : 'Gehört dir nicht. In eine eigene Playlist kopieren, dann ist sie wählbar.';
-    txt.append(nm, mt); row.append(cb, txt); box.append(row);
+    const box2 = el('div');
+    box2.append(txt('div', 'name', p.name), txt('div', 'meta', own ? plTotal(p) + ' Songs' : 'Gehört dir nicht. In eine eigene Playlist kopieren, dann ist sie wählbar.'));
+    row.append(cb, box2); box.append(row);
   }
 }
 function validSelection(){
   const ids = new Set(playlists.filter(ownsPl).map(p => p.id));
   return [...selected()].filter(id => ids.has(id));
 }
-function renderSelInfo(){
+function selectionText(){
   const ids = validSelection();
   const n = playlists.filter(p => ids.includes(p.id)).reduce((s, p) => s + plTotal(p), 0);
-  $('#selInfo').textContent = ids.length ? ids.length + (ids.length === 1 ? ' Playlist' : ' Playlists') + ' mit zusammen ' + n + ' Songs gewählt' : 'Wähle mindestens eine Playlist.';
-  $('#startBtn').disabled = !ids.length;
+  return ids.length ? ids.length + (ids.length === 1 ? ' Playlist' : ' Playlists') + ' mit zusammen ' + n + ' Songs' : '';
+}
+function renderSelInfo(){ $('#selInfo').textContent = selectionText() ? selectionText() + ' gewählt' : 'Wähle mindestens eine Playlist.'; }
+function renderMusicInfo(){
+  const d = store.get('device', null);
+  const parts = [playlists.length ? (selectionText() || 'Noch keine Playlist gewählt') : 'Playlists werden geladen …', 'Hörzeit ' + seconds() + ' s'];
+  if (d) parts.push(d.name);
+  $('#musicInfo').textContent = parts.join(', ');
 }
 function renderMixes(){
   const box = $('#mixList'), mixes = store.get('mixes', []);
@@ -500,10 +645,10 @@ function renderMixes(){
   if (!mixes.length) { box.innerHTML = '<p class="muted small" style="margin:0">Noch keine Mischung gespeichert.</p>'; return; }
   const cur = [...selected()].sort().join(',');
   for (const m of mixes) {
-    const chip = document.createElement('span'); chip.className = 'chip' + ([...m.ids].sort().join(',') === cur ? ' on' : '');
-    const b = document.createElement('button'); b.type = 'button'; b.textContent = m.name;
+    const chip = el('span', 'chip' + ([...m.ids].sort().join(',') === cur ? ' on' : ''));
+    const b = txt('button', '', m.name); b.type = 'button';
     b.onclick = () => setSelected(new Set(m.ids));
-    const x = document.createElement('button'); x.type = 'button'; x.className = 'x'; x.textContent = '×';
+    const x = txt('button', 'x', '×'); x.type = 'button';
     x.setAttribute('aria-label', 'Mischung ' + m.name + ' löschen');
     x.onclick = () => { store.set('mixes', store.get('mixes', []).filter(o => o.name !== m.name)); renderMixes(); };
     chip.append(b, x); box.append(chip);
@@ -542,29 +687,30 @@ async function loadDevices(){
     sel.value = pick;
     const chosen = list.find(d => d.id === pick);
     store.set('device', { id:pick, name:chosen.missing ? chosen.name : devLabel(chosen) });
+    renderMusicInfo();
   } catch (e) { handleError(e, loadDevices); }
+}
+function openSettings(){
+  show('settings');
+  if (!playlists.length) loadPlaylists(); else { renderPlaylists(); renderMixes(); renderSelInfo(); }
+  loadDevices();
 }
 
 /* ---------- Stapel ---------- */
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
 const cleanTitle = s => String(s || '').replace(/\s[-–]\s.*$/, '').replace(/[(\[].*?[)\]]/g, '');
-function shuffle(a){
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1);
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
+const rnd = n => crypto.getRandomValues(new Uint32Array(1))[0] % n;
+function shuffle(a){ for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function toCard(t){
   const al = t.album || {};
   return { uri:t.uri, title:t.name, artist:(t.artists || []).map(a => a.name).join(', '),
            album:al.name || '', year:(al.release_date || '').slice(0, 4) || '?', duration:t.duration_ms || 0 };
 }
-async function buildDeck(ids){
+async function buildDeck(ids, onProgress){
   const keys = new Set(), cards = [];
   for (let i = 0; i < ids.length; i++) {
     const p = playlists.find(x => x.id === ids[i]);
-    $('#status').textContent = 'Lade ' + (p ? '„' + p.name + '“' : 'Playlist') + ' (' + (i + 1) + ' von ' + ids.length + ') …';
+    onProgress && onProgress('Lade ' + (p ? '„' + p.name + '“' : 'Playlist') + ' (' + (i + 1) + ' von ' + ids.length + ') …');
     let next = '/playlists/' + ids[i] + '/items?limit=50&market=from_token';
     try {
       while (next) {
@@ -585,44 +731,9 @@ async function buildDeck(ids){
   }
   return shuffle(cards);
 }
-let deck = null;
-const saveDeck = () => store.set('deck', deck);
-function takeCard(){
-  if (!deck || !deck.cards.length) return null;
-  if (deck.pos >= deck.cards.length) { shuffle(deck.cards); deck.pos = 0; toast('Alle Karten waren dran. Der Stapel ist neu gemischt.'); }
-  const c = deck.cards[deck.pos++]; saveDeck(); return c;
-}
-function removeCard(c){
-  const i = deck.cards.findIndex(x => x.uri === c.uri);
-  if (i < 0) return;
-  deck.cards.splice(i, 1);
-  if (i < deck.pos) deck.pos--;
-  saveDeck();
-}
-function updateDeckInfo(){
-  $('#deckInfo').textContent = deck ? 'Karte ' + Math.min(deck.pos, deck.cards.length) + ' von ' + deck.cards.length : '';
-}
 
-/* ---------- Spiel ---------- */
-const game = { phase:'ready', card:null, revealed:false, run:0, timer:null, device:null };
+/* ---------- Abspielen ---------- */
 const seconds = () => Math.min(60, Math.max(1, Number(store.get('seconds', 20)) || 20));
-const RING = 2 * Math.PI * 46;
-
-function setPhase(p){
-  game.phase = p;
-  document.querySelectorAll('[data-when]').forEach(b => b.hidden = !b.dataset.when.split(' ').includes(p));
-  $('#record').classList.toggle('spin', p === 'playing');
-  $('#front').hidden = !game.revealed; $('#back').hidden = game.revealed;
-  const st = { ready:'Zieh eine Karte.', loading:'Song wird gestartet …', playing:game.revealed ? 'Läuft nochmal' : 'Hör genau hin',
-               stopped:'Zeit um. Aus welchem Jahr ist der Song?', revealed:'' };
-  if (p !== 'loading' || !$('#status').textContent.startsWith('Lade')) $('#status').textContent = st[p];
-  if (p !== 'playing') { $('#count').textContent = p === 'stopped' ? '0' : ''; }
-  if (p === 'ready') setRing(0);
-  updateDeckInfo();
-  if (p !== 'playing') pushState();
-}
-function setRing(frac){ $('#prog').style.strokeDashoffset = String(RING * frac); }
-
 function startPos(dur, secs){
   const L = secs * 1000 + 500;
   let lo = 0.15 * dur, hi = Math.min(0.70 * dur, dur - L);
@@ -635,118 +746,373 @@ async function resolveDevice(){
   if (sdkDeviceId && !list.some(d => d.id === sdkDeviceId)) list.push({ id:sdkDeviceId, name:SDK_NAME });
   const d = (want && list.find(x => x.id === want.id)) || (!want && (list.find(x => x.is_active) || (list.length === 1 && list[0])));
   if (!d) throw new UserError(want
-    ? 'Das Abspielgerät „' + want.name + '“ ist gerade nicht erreichbar. Öffne dort Spotify, spiel kurz etwas an und versuch es nochmal, oder wähle in den Einstellungen ein anderes Gerät.'
-    : 'Kein Abspielgerät gewählt. Öffne Spotify auf dem Handy oder Lautsprecher und wähle es in den Einstellungen aus.');
+    ? 'Das Abspielgerät „' + want.name + '“ ist gerade nicht erreichbar. Öffne dort Spotify, spiel kurz etwas an und versuch es nochmal, oder wähle unter Musik ein anderes Gerät.'
+    : 'Kein Abspielgerät gewählt. Öffne Spotify auf dem Handy oder Lautsprecher und wähle es unter Musik aus.');
   return d.id;
 }
 const isSkippable = e => e instanceof ApiError && (e.status === 400 || (e.status === 403 && e.reason !== 'PREMIUM_REQUIRED'));
-class SkipError extends Error {}
-
-async function playSnippet(card){
-  const run = ++game.run;
-  stopTimer();
-  game.device = await resolveDevice();
+const clip = { token:0, timer:null };
+async function pauseMusic(){ try { await api('/me/player/pause', { method:'PUT' }); } catch (e) { if (e instanceof AuthError) handleError(e); } }
+async function playClip(card, onEnd){
+  const tok = ++clip.token; clearTimeout(clip.timer);
+  const dev = await resolveDevice();
   try {
-    await api('/me/player/play?device_id=' + encodeURIComponent(game.device), { method:'PUT',
-      body:JSON.stringify({ uris:[card.uri], position_ms:card.start }) });
+    await api('/me/player/play?device_id=' + encodeURIComponent(dev), { method:'PUT', body:JSON.stringify({ uris:[card.uri], position_ms:card.start || 0 }) });
   } catch (e) { if (isSkippable(e)) throw new SkipError(); throw e; }
-  if (run !== game.run) return;
-  setPhase('playing');
-  startTimer(run);
+  if (tok !== clip.token) return null;
+  const dur = seconds() * 1000;
+  clip.timer = setTimeout(() => { if (tok === clip.token) { clip.token++; pauseMusic(); onEnd(); } }, dur);
+  return { tok, dur };
+}
+async function clipRunsFine(card, tok){
   await sleep(3000);
-  if (run !== game.run) return;
+  if (tok !== clip.token) return true;
   let st = null;
-  try { st = await api('/me/player'); } catch (e) { if (e instanceof AuthError) throw e; return; }
-  if (run !== game.run) return;
-  const same = st && st.item && (st.item.uri === card.uri || st.item.name === card.title);
-  if (!same || (game.timer && !st.is_playing)) {
-    game.run++; stopTimer();
-    try { await api('/me/player/pause', { method:'PUT' }); } catch {}
-    throw new SkipError();
+  try { st = await api('/me/player'); } catch (e) { if (e instanceof AuthError) throw e; return true; }
+  if (tok !== clip.token) return true;
+  return !!(st && st.item && (st.item.uri === card.uri || st.item.name === card.title) && st.is_playing !== false);
+}
+function stopClip(){ clip.token++; clearTimeout(clip.timer); pauseMusic(); }
+
+/* ---------- Aufgaben ---------- */
+const COLORS = [
+  { name:'Blau', bg:'#5B9BFF', fg:'#0B1E40' },
+  { name:'Grün', bg:'#4ED18A', fg:'#06301A' },
+  { name:'Gelb', bg:'#FFD23D', fg:'#3D3000' },
+  { name:'Lila', bg:'#A77BFF', fg:'#1E0C3D' },
+  { name:'Pink', bg:'#FF4F97', fg:'#3D0A1F' }
+];
+const PART_NAMES = { year:'Jahr', decade:'Jahrzehnt', half:'Halbes Jahrzehnt', title:'Titel', artist:'Künstler' };
+const one = (id, name, parts, join) => ({ id, name, kind:'one', parts, join:join || 'and' });
+const BUILTIN = [
+  one('y0', 'Erscheinungsjahr genau', [{ k:'year', tol:0 }]),
+  one('y1', 'Erscheinung ± 1 Jahr', [{ k:'year', tol:1 }]),
+  one('y2', 'Erscheinung ± 2 Jahre', [{ k:'year', tol:2 }]),
+  one('y3', 'Erscheinung ± 3 Jahre', [{ k:'year', tol:3 }]),
+  one('y4', 'Erscheinung ± 4 Jahre', [{ k:'year', tol:4 }]),
+  one('ty', 'Titel oder Jahr', [{ k:'title' }, { k:'year', tol:0 }], 'or'),
+  one('tk', 'Titel oder Künstler', [{ k:'title' }, { k:'artist' }], 'or'),
+  one('yk', 'Jahr oder Künstler', [{ k:'year', tol:0 }, { k:'artist' }], 'or'),
+  one('dec', 'Jahrzehnt', [{ k:'decade' }]),
+  one('t', 'Titel', [{ k:'title' }]),
+  one('k', 'Künstler', [{ k:'artist' }]),
+  one('tka', 'Titel und Künstler', [{ k:'title' }, { k:'artist' }], 'and'),
+  one('tdec', 'Titel und Jahrzehnt', [{ k:'title' }, { k:'decade' }], 'and'),
+  one('half', 'Halbes Jahrzehnt', [{ k:'half' }]),
+  { id:'older', name:'Welcher Song ist älter?', kind:'two', two:{ k:'older' } },
+  { id:'d1', name:'Abstand der Songs ± 1 Jahr', kind:'two', two:{ k:'diff', tol:1 } },
+  { id:'d2', name:'Abstand der Songs ± 2 Jahre', kind:'two', two:{ k:'diff', tol:2 } },
+  { id:'d3', name:'Abstand der Songs ± 3 Jahre', kind:'two', two:{ k:'diff', tol:3 } },
+  { id:'d4', name:'Abstand der Songs ± 4 Jahre', kind:'two', two:{ k:'diff', tol:4 } }
+];
+const DEFAULT_COLORS = ['dec', 'tk', 'older', 'y2', 'y0'];
+const customTasks = () => store.get('tasks', []);
+const allTasks = () => [...BUILTIN, ...customTasks()];
+const taskById = id => allTasks().find(t => t.id === id) || BUILTIN[0];
+function colorTasks(){
+  const ids = store.get('colors', DEFAULT_COLORS).slice(0, 5);
+  const known = new Set(allTasks().map(t => t.id));
+  return DEFAULT_COLORS.map((d, i) => known.has(ids[i]) ? ids[i] : d);
+}
+const decadeOf = y => y < 1960 ? 'vor 1960' : Math.floor(y / 10) * 10 + 'er';
+const halfOf = y => { if (y < 1960) return 'vor 1960'; const s = Math.floor(y / 5) * 5; return s + '–' + String(s + 4).slice(2); };
+const DECADES = ['vor 1960', '1960er', '1970er', '1980er', '1990er', '2000er', '2010er', '2020er'];
+const HALVES = ['vor 1960', ...Array.from({ length:14 }, (_, i) => { const s = 1960 + i * 5; return s + '–' + String(s + 4).slice(2); })];
+const tolText = t => t ? ' (± ' + t + (t === 1 ? ' Jahr' : ' Jahre') + ' zählt)' : '';
+function selfParts(task, check){
+  if (task.kind === 'free') return ['free'];
+  if (task.kind !== 'one' || check !== 'self') return [];
+  return task.parts.filter(p => p.k === 'title' || p.k === 'artist').map(p => p.k);
+}
+function needsInput(task, check){
+  if (!task) return false;
+  if (task.kind === 'two') return true;
+  if (task.kind === 'free') return false;
+  return task.parts.some(p => !(check === 'self' && (p.k === 'title' || p.k === 'artist')));
+}
+function normTxt(s){
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s[-–]\s.*$/, '').replace(/[(\[].*?[)\]]/g, '').replace(/\b(feat|ft|featuring)\b.*$/, '')
+    .replace(/&/g, ' and ').replace(/\bund\b/g, ' and ').replace(/[^a-z0-9]+/g, ' ').trim().replace(/^(the|die|der|das) /, '');
+}
+function lev(a, b){
+  const m = a.length, n = b.length; if (!m) return n; if (!n) return m;
+  let prev = Array.from({ length:n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
   }
+  return prev[n];
 }
-function startTimer(run){
-  const total = seconds() * 1000, t0 = Date.now();
-  game.secs = seconds(); game.endsAt = room.code ? FB.now() + total : 0;
-  pushState();
-  const tick = () => {
-    if (run !== game.run) return stopTimer();
-    const el = Date.now() - t0;
-    setRing(Math.min(1, el / total));
-    $('#count').textContent = String(Math.max(0, Math.ceil((total - el) / 1000)));
-    if (el >= total) endSnippet(run);
-  };
-  tick(); game.timer = setInterval(tick, 100);
+function close(ans, target){
+  const a = normTxt(ans).replace(/ /g, ''), t = normTxt(target).replace(/ /g, '');
+  if (!a || !t) return false;
+  if (a === t) return true;
+  if (1 - lev(a, t) / Math.max(a.length, t.length) >= 0.8) return true;
+  return a.length >= 4 && t.includes(a) && a.length / t.length >= 0.5;
 }
-function stopTimer(){ clearInterval(game.timer); game.timer = null; }
-async function endSnippet(run){
-  if (run !== game.run) return;
-  game.run++; stopTimer();
-  setPhase(game.revealed ? 'revealed' : 'stopped');
-  try { await api('/me/player/pause', { method:'PUT' }); } catch {}
+const artistOk = (ans, artists) => close(ans, artists) || String(artists || '').split(/,\s*/).some(x => close(ans, x));
+function evalTask(task, check, ans, cards, self){
+  ans = ans || {}; self = self || {};
+  const y1 = parseInt(cards[0].year, 10);
+  if (task.kind === 'free') return self.free === undefined ? null : !!self.free;
+  if (task.kind === 'two') {
+    const y2 = parseInt(cards[1].year, 10), k = task.two.k;
+    if (k === 'diff') { const v = parseInt(ans.diff, 10); return !isNaN(v) && Math.abs(v - Math.abs(y1 - y2)) <= (task.two.tol || 0); }
+    if (ans.pick !== '1' && ans.pick !== '2') return false;
+    if (y1 === y2) return true;
+    const olderIs = y1 < y2 ? '1' : '2';
+    return k === 'older' ? ans.pick === olderIs : ans.pick !== olderIs;
+  }
+  const res = task.parts.map(p => {
+    switch (p.k) {
+      case 'year': { const v = parseInt(ans.year, 10); return !isNaN(v) && Math.abs(v - y1) <= (p.tol || 0); }
+      case 'decade': return ans.decade === decadeOf(y1);
+      case 'half': return ans.half === halfOf(y1);
+      case 'title': return check === 'self' ? (self.title === undefined ? null : !!self.title) : close(ans.title, cards[0].title);
+      case 'artist': return check === 'self' ? (self.artist === undefined ? null : !!self.artist) : artistOk(ans.artist, cards[0].artist);
+    }
+    return false;
+  });
+  if (task.join === 'or') return res.some(r => r === true) ? true : res.some(r => r === null) ? null : false;
+  return res.some(r => r === false) ? false : res.some(r => r === null) ? null : true;
 }
-async function stopNow(){
-  game.run++; stopTimer();
-  setPhase(game.revealed ? 'revealed' : 'stopped');
-  try { await api('/me/player/pause', { method:'PUT' }); } catch (e) { if (e instanceof AuthError) handleError(e); }
+function saidText(task, ans){
+  if (!ans) return '';
+  const p = [];
+  if (task.kind === 'two') { if (ans.pick) p.push('Song ' + ans.pick); if (ans.diff) p.push(ans.diff + ' Jahre'); }
+  else for (const k of ['year', 'decade', 'half', 'title', 'artist']) if (ans[k]) p.push(ans[k]);
+  return p.join(', ');
 }
 
-async function drawCard(){
-  game.revealed = false; game.card = null; setPhase('loading');
-  for (let tries = 0; tries < 4; tries++) {
-    const c = takeCard();
-    if (!c) { setPhase('ready'); showMsg('Im Stapel ist kein abspielbarer Song mehr. Starte in den Einstellungen ein neues Spiel.'); return; }
-    c.start = startPos(c.duration, seconds());
-    game.card = c; setRing(0); updateDeckInfo();
-    try { await playSnippet(c); return; }
-    catch (e) {
-      if (e instanceof SkipError) { removeCard(c); setPhase('loading'); continue; }
-      setPhase('ready'); handleError(e, drawCard); return;
+/* Antwortformular: am Spielerhandy und in der Vorschau des Baukastens */
+function buildAnswerForm(task, check, box, opts = {}){
+  box.innerHTML = '';
+  const form = el('div', 'ans');
+  const val = {};
+  const changed = () => opts.onChange && opts.onChange();
+  const field = (label, input) => { const w = el('div'); w.append(txt('label', '', label), input); form.append(w); };
+  const btns = (list, key, cls, labels) => {
+    const g = el('div', 'btngrid' + (cls ? ' ' + cls : ''));
+    list.forEach((v, i) => {
+      const b = txt('button', '', labels ? labels[i] : v); b.type = 'button'; b.dataset.v = v;
+      b.onclick = () => { if (opts.disabled) return; val[key] = v; g.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); changed(); };
+      g.append(b);
+    });
+    return g;
+  };
+  const textIn = (key, ph, numeric) => {
+    const i = el('input', 'field'); i.type = 'text'; i.placeholder = ph; i.dataset.k = key; i.autocomplete = 'off'; i.spellcheck = false;
+    if (numeric) { i.inputMode = 'numeric'; i.maxLength = 4; }
+    i.disabled = !!opts.disabled;
+    i.oninput = () => { val[key] = i.value.trim(); changed(); };
+    return i;
+  };
+  const sayIt = what => form.append(txt('p', 'hint', 'Sag ' + what + ' laut. Nach dem Aufdecken bewertest du dich selbst.'));
+  if (task.kind === 'free') {
+    form.append(txt('p', '', task.text || task.name));
+    form.append(txt('p', 'hint', 'Nach dem Aufdecken bewertest du dich selbst.'));
+  } else if (task.kind === 'two') {
+    if (task.two.k === 'diff') field('Abstand in Jahren' + tolText(task.two.tol), textIn('diff', '12', true));
+    else field(task.two.k === 'older' ? 'Welcher Song ist älter?' : 'Welcher Song ist jünger?', btns(['1', '2'], 'pick', 'two', ['Song 1', 'Song 2']));
+  } else {
+    for (const p of task.parts) {
+      if (p.k === 'year') field('Erscheinungsjahr' + tolText(p.tol), textIn('year', '1987', true));
+      if (p.k === 'decade') field('Jahrzehnt', btns(DECADES, 'decade'));
+      if (p.k === 'half') field('Halbes Jahrzehnt', btns(HALVES, 'half'));
+      if (p.k === 'title') { if (check === 'self') sayIt('den Titel'); else field('Titel', textIn('title', 'Songtitel')); }
+      if (p.k === 'artist') { if (check === 'self') sayIt('den Künstler'); else field('Künstler', textIn('artist', 'Name')); }
     }
+    if (task.parts.length > 1) form.append(txt('p', 'hint', task.join === 'or' ? 'Eins von beiden richtig reicht.' : 'Beides muss stimmen.'));
   }
-  setPhase('ready');
-  showMsg('Vier Songs hintereinander ließen sich nicht abspielen. Prüfe, ob Spotify auf dem Abspielgerät läuft.', drawCard);
+  box.append(form);
+  return { val, form };
 }
-async function playAgain(){
-  if (!game.card) return;
-  const back = game.revealed ? 'revealed' : 'stopped';
-  setPhase('loading'); setRing(0);
-  try { await playSnippet(game.card); }
-  catch (e) {
-    setPhase(back);
-    if (e instanceof SkipError) showMsg('Spotify spielt diesen Song gerade nicht ab. Zieh einfach die nächste Karte.');
-    else handleError(e, playAgain);
+
+/* ---------- Bingo-Karten ---------- */
+function makeGrid(){
+  const R = shuffle([0, 1, 2, 3, 4]), C = shuffle([0, 1, 2, 3, 4]), S = shuffle([0, 1, 2, 3, 4]);
+  const g = [];
+  for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) g.push(S[(R[r] + C[c]) % 5]);
+  return g;
+}
+const LINES = (() => {
+  const L = [];
+  for (let i = 0; i < 5; i++) { L.push([0, 1, 2, 3, 4].map(c => i * 5 + c)); L.push([0, 1, 2, 3, 4].map(r => r * 5 + i)); }
+  L.push([0, 6, 12, 18, 24], [4, 8, 12, 16, 20]);
+  return L;
+})();
+const bingoWon = (marks, win) => win === 'full' ? marks.every(Boolean) : LINES.some(l => l.every(i => marks[i]));
+function bingoMissing(marks, win){
+  marks = marks || [];
+  if (win === 'full') return 25 - marks.filter(Boolean).length;
+  return Math.min(...LINES.map(l => l.filter(i => !marks[i]).length));
+}
+
+/* ---------- Hauptmenü und Regeln ---------- */
+const MODES = {
+  turns:{ name:'Zeitstrahl reihum', desc:'Einer ist dran und ordnet ein, die anderen schauen zu.' },
+  together:{ name:'Zeitstrahl gleichzeitig', desc:'Alle ordnen denselben Song in ihren eigenen Zeitstrahl ein.' },
+  bingo:{ name:'Bingo', desc:'Eine Farbe bestimmt, was zum Song erraten wird.' },
+  solo:{ name:'Ohne Mitspieler', desc:'Nur Karte ziehen, hören und umdrehen.' }
+};
+const DEFAULT_RULES = { mode:'turns', target:10, placeSecs:15, answerSecs:30, win:'line', check:'auto' };
+const rules = () => ({ ...DEFAULT_RULES, ...store.get('rules', {}) });
+const setRule = (k, v) => { store.set('rules', { ...rules(), [k]:v }); renderHome(); };
+const running = () => !!(M && M.phase !== 'over');
+
+function openHome(){
+  show('home');
+  if (!playlists.length) loadPlaylists();
+  renderHome();
+}
+function renderHome(){
+  const r = rules();
+  renderMusicInfo();
+  const ml = $('#modeList'); ml.innerHTML = '';
+  for (const [k, m] of Object.entries(MODES)) {
+    const b = el('button', 'mode' + (r.mode === k ? ' on' : ''));
+    b.append(txt('b', '', m.name), txt('span', '', m.desc));
+    b.type = 'button'; b.setAttribute('aria-pressed', String(r.mode === k)); b.onclick = () => setRule('mode', k);
+    ml.append(b);
   }
+  const box = $('#rulesBox'); box.innerHTML = '';
+  box.append(Object.assign(txt('h2', '', 'Regeln'), { style:'margin-bottom:.4rem' }));
+  let first = true;
+  const rowEl = () => { const row = el('div', 'row2' + (first ? ' first' : '')); first = false; return row; };
+  const sel = (label, key, opts, fmt) => {
+    const row = rowEl(), s = el('select');
+    for (const o of opts) { const op = el('option'); op.value = o; op.textContent = fmt ? fmt(o) : o; s.append(op); }
+    s.value = String(r[key]); s.onchange = () => setRule(key, Number(s.value));
+    row.append(txt('span', '', label), s); box.append(row);
+  };
+  const seg = (label, key, opts) => {
+    const row = rowEl(), g = el('div', 'seg');
+    for (const [v, t] of opts) { const b = txt('button', r[key] === v ? 'on' : '', t); b.type = 'button'; b.onclick = () => setRule(key, v); g.append(b); }
+    row.append(txt('span', '', label), g); box.append(row);
+  };
+  if (r.mode === 'turns' || r.mode === 'together') sel('Karten zum Sieg', 'target', Array.from({ length:18 }, (_, i) => i + 3));
+  if (r.mode === 'together') sel('Zeit zum Einordnen', 'placeSecs', [5, 10, 15, 20, 30, 45, 60], v => v + ' s');
+  if (r.mode === 'bingo') {
+    seg('Gewinn', 'win', [['line', 'Eine Reihe'], ['full', 'Volle Karte']]);
+    seg('Titel, Künstler', 'check', [['auto', 'Eintippen'], ['self', 'Selbst']]);
+    sel('Zeit zum Antworten', 'answerSecs', [10, 15, 20, 30, 45, 60, 90], v => v + ' s');
+    const b = el('button', 'linkrow'); b.type = 'button';
+    const sw = el('span', 'swatches'); COLORS.forEach(c => { const d = el('span', 'sw'); d.style.background = c.bg; sw.append(d); });
+    b.append(txt('span', '', 'Farben und Aufgaben'), sw); b.onclick = openColors; box.append(b);
+  }
+  if (r.mode === 'turns' || r.mode === 'together') box.append(txt('p', 'muted small', 'Ein gleiches Jahr wie die Nachbarkarte zählt als richtig.'));
+  if (r.mode === 'together') box.lastChild.textContent += ' Erreichen mehrere in derselben Runde das Ziel, gewinnen sie gemeinsam.';
+  if (r.mode === 'solo') box.append(txt('p', 'muted small', 'Keine Regeln. Du ziehst Karten, hörst und drehst um.'));
+  $('#goBtn').textContent = r.mode === 'solo' ? 'Spiel starten' : room.code ? 'Spielraum ' + room.code + ' öffnen' : 'Spielraum öffnen';
+  const saved = store.get('match', null), rb = $('#resumeBtn');
+  rb.hidden = !(saved && saved.phase !== 'over' && saved.deck && saved.deck.cards && saved.deck.cards.length);
+  if (!rb.hidden) rb.textContent = 'Weiterspielen: ' + MODES[saved.mode].name + ', Runde ' + saved.round;
 }
-function paintCard(who, c){
-  const id = who === 'p' ? { f:'#pFront', y:'#pYear', t:'#pTitle', a:'#pArtist', al:'#pAlbum' }
-                         : { f:'#front', y:'#fYear', t:'#fTitle', a:'#fArtist', al:'#fAlbum' };
-  const f = $(id.f), key = c.year + '|' + c.title;
-  const y = parseInt(c.year, 10);
-  const hue = isNaN(y) ? 300 : Math.min(315, Math.max(25, 25 + (y - 1950) / 76 * 290));
-  f.style.background = 'hsl(' + hue.toFixed(0) + ' 85% 70%)';
-  $(id.y).textContent = c.year; $(id.t).textContent = c.title;
-  $(id.a).textContent = c.artist; $(id.al).textContent = c.album ? 'Album: ' + c.album : '';
-  if (f.dataset.key !== key) { f.dataset.key = key; f.style.animation = 'none'; void f.offsetWidth; f.style.animation = ''; }
+function goFromHome(){
+  if (!validSelection().length) { toast(playlists.length ? 'Wähle unter Musik zuerst mindestens eine Playlist.' : 'Playlists werden noch geladen.'); return; }
+  if (rules().mode === 'solo') startMatch(); else openLobby();
 }
-function reveal(){
-  const c = game.card; if (!c) return;
-  game.revealed = true;
-  paintCard('h', c);
-  setPhase('revealed');
+
+/* ---------- Bingo-Farben, Aufgabenauswahl, Baukasten ---------- */
+let pickColor = 0;
+function openColors(){
+  show('colors');
+  const box = $('#colorList'); box.innerHTML = '';
+  const ids = colorTasks();
+  COLORS.forEach((c, i) => {
+    const b = el('button', 'colorrow'); b.type = 'button';
+    const sw = el('span', 'sw'); sw.style.background = c.bg;
+    b.append(sw, txt('span', 'cn', c.name), txt('span', 'tn', taskById(ids[i]).name), txt('span', 'muted', '›'));
+    b.onclick = () => openPicker(i);
+    box.append(b);
+  });
+}
+function openPicker(ci){
+  pickColor = ci; show('picker');
+  $('#pickTitle').textContent = 'Aufgabe für ' + COLORS[ci].name;
+  const box = $('#pickList'); box.innerHTML = '';
+  const ids = colorTasks();
+  const row = t => {
+    const at = ids.indexOf(t.id);
+    const b = el('button', 'pick' + (at === ci ? ' cur' : '')); b.type = 'button';
+    b.append(txt('span', 'pn', (at === ci ? '✓ ' : '') + t.name));
+    if (at >= 0 && at !== ci) b.append(txt('span', 'pt', 'bei ' + COLORS[at].name));
+    if (t.id.startsWith('c') && at < 0) {
+      const d = txt('span', 'del', '×'); d.setAttribute('role', 'button'); d.setAttribute('aria-label', t.name + ' löschen');
+      d.onclick = ev => { ev.stopPropagation(); if (confirm('„' + t.name + '“ löschen?')) { store.set('tasks', customTasks().filter(x => x.id !== t.id)); openPicker(ci); } };
+      b.append(d);
+    }
+    b.onclick = () => { assignTask(ci, t.id); openColors(); };
+    box.append(b);
+  };
+  BUILTIN.forEach(row);
+  const cust = customTasks();
+  if (cust.length) { box.append(txt('div', 'sub', 'Eigene Aufgaben')); cust.forEach(row); }
+}
+function assignTask(ci, id){
+  const ids = colorTasks(), other = ids.indexOf(id);
+  if (other >= 0 && other !== ci) ids[other] = ids[ci];
+  ids[ci] = id; store.set('colors', ids);
+}
+const builder = { kind:'one', join:'and' };
+function fillTol(s){ s.innerHTML = ''; for (let i = 0; i <= 10; i++) { const o = el('option'); o.value = i; o.textContent = i ? '± ' + i : 'genau'; s.append(o); } }
+function openBuilder(){
+  show('builder');
+  Object.assign(builder, { kind:'one', join:'and' });
+  $('#bName').value = ''; $('#bText').value = ''; $('#bErr').textContent = '';
+  const p1 = $('#bP1'), p2 = $('#bP2');
+  p1.innerHTML = ''; p2.innerHTML = '<option value="">keiner</option>';
+  for (const [k, n] of Object.entries(PART_NAMES)) {
+    const a = el('option'); a.value = k; a.textContent = n; p1.append(a);
+    const b = el('option'); b.value = k; b.textContent = n; p2.append(b);
+  }
+  [$('#bT1'), $('#bT2'), $('#bTT')].forEach(fillTol);
+  p1.value = 'year'; p2.value = ''; $('#bTwoK').value = 'older';
+  syncBuilder();
+}
+function builderTask(){
+  const name = $('#bName').value.trim();
+  if (builder.kind === 'free') return { id:'', name:name || 'Freie Aufgabe', kind:'free', text:$('#bText').value.trim() };
+  if (builder.kind === 'two') {
+    const k = $('#bTwoK').value, two = { k }; if (k === 'diff') two.tol = Number($('#bTT').value);
+    return { id:'', name:name || 'Zwei Songs', kind:'two', two };
+  }
+  const mk = (k, tol) => k === 'year' ? { k, tol:Number(tol) } : { k };
+  const parts = [mk($('#bP1').value, $('#bT1').value)];
+  if ($('#bP2').value) parts.push(mk($('#bP2').value, $('#bT2').value));
+  return { id:'', name:name || 'Eigene Aufgabe', kind:'one', parts, join:builder.join };
+}
+function syncBuilder(){
+  document.querySelectorAll('#bKind button').forEach(b => b.classList.toggle('on', b.dataset.v === builder.kind));
+  document.querySelectorAll('#bJoin button').forEach(b => b.classList.toggle('on', b.dataset.v === builder.join));
+  $('#bOne').hidden = builder.kind !== 'one'; $('#bTwo').hidden = builder.kind !== 'two'; $('#bFree').hidden = builder.kind !== 'free';
+  $('#bT1row').hidden = $('#bP1').value !== 'year';
+  $('#bT2row').hidden = $('#bP2').value !== 'year';
+  $('#bJoinRow').hidden = !$('#bP2').value;
+  $('#bTTrow').hidden = $('#bTwoK').value !== 'diff';
+  const t = builderTask(), pv = $('#bPreview'); pv.innerHTML = '';
+  const ban = el('div', 'banner'); ban.style.background = COLORS[pickColor].bg; ban.style.color = COLORS[pickColor].fg;
+  ban.append(txt('div', 'bc', COLORS[pickColor].name), txt('div', 'bt', t.name));
+  const fb = el('div'); pv.append(ban, fb);
+  buildAnswerForm(t, rules().check, fb, { disabled:true });
+}
+function saveBuilder(){
+  const t = builderTask(), err = $('#bErr');
+  if (!$('#bName').value.trim()) { err.textContent = 'Gib der Aufgabe einen Namen.'; return; }
+  if (t.kind === 'free' && !t.text) { err.textContent = 'Schreib den Aufgabentext.'; return; }
+  if (t.kind === 'one' && t.parts.length === 2 && t.parts[0].k === t.parts[1].k) { err.textContent = 'Wähle zwei verschiedene Bausteine.'; return; }
+  if (allTasks().some(x => x.name.toLowerCase() === t.name.toLowerCase())) { err.textContent = 'Eine Aufgabe mit diesem Namen gibt es schon.'; return; }
+  t.id = 'c' + Date.now().toString(36);
+  store.set('tasks', [...customTasks(), t]);
+  assignTask(pickColor, t.id);
+  toast('„' + t.name + '“ gespeichert und ' + COLORS[pickColor].name + ' zugewiesen.');
+  openColors();
 }
 
 /* ---------- Spielraum am Haupthandy ---------- */
-const room = { code:null, players:{}, unsub:null };
-
-function pushState(){
-  if (!room.code || !FB.uid) return;
-  const c = game.card;
-  const st = { phase:game.phase, n:deck ? Math.min(deck.pos, deck.cards.length) : 0, total:deck ? deck.cards.length : 0,
-               revealed:!!game.revealed, secs:game.secs || seconds(), endsAt:game.phase === 'playing' ? (game.endsAt || 0) : 0,
-               card:game.revealed && c ? { title:c.title, artist:c.artist, year:c.year, album:c.album } : null };
-  FB.set('rooms/' + room.code + '/state', st).catch(() => {});
-}
+const room = { code:null, players:{}, unsub:null, aunsub:null, seen:{} };
 async function ensureRoom(){
   if (room.code) return room.code;
   await FB.start();
@@ -755,22 +1121,24 @@ async function ensureRoom(){
   for (let i = 0; !code && i < 6; i++) {
     const c = newCode();
     if (await FB.get('rooms/' + c + '/host') === null) {
-      await FB.set('rooms/' + c, { host:FB.uid, created:FB.stamp(), state:{ phase:'lobby' } });
+      await FB.set('rooms/' + c, { host:FB.uid, created:FB.stamp(), state:{ phase:'lobby', mode:rules().mode } });
       code = c;
     }
   }
   if (!code) throw new Error('kein freier Raumcode');
   room.code = code; store.set('room', code);
   if (room.unsub) room.unsub();
-  room.unsub = FB.on('rooms/' + code + '/players', v => { room.players = v || {}; tidyPlayers(); drawLobby(); });
-  if (running()) pushState(); else FB.set('rooms/' + code + '/state', { phase:'lobby' }).catch(() => {});
+  if (room.aunsub) room.aunsub();
+  room.unsub = FB.on('rooms/' + code + '/players', v => { room.players = v || {}; tidyPlayers(); syncPlayers(); drawLobby(); });
+  room.aunsub = FB.on('rooms/' + code + '/actions', v => onActions(v || {}));
+  pushState();
   return code;
 }
-const running = () => $('#game').dataset.running === '1';
 async function openLobby(){
   show('lobby');
+  $('#lobbyMode').textContent = 'Modus: ' + MODES[running() ? M.mode : rules().mode].name;
   $('#lobbyStart').textContent = running() ? 'Zurück zum Spiel' : 'Spiel starten';
-  if (room.code) { drawLobby(); return; }
+  if (room.code) { pushState(); drawLobby(); return; }
   $('#roomCode').textContent = '····'; $('#qrBox').innerHTML = '';
   $('#lobbyInfo').textContent = 'Spielraum wird geöffnet …';
   try { await ensureRoom(); drawLobby(); }
@@ -780,8 +1148,7 @@ function tidyPlayers(){
   const byName = {};
   for (const [uid, p] of Object.entries(room.players)) {
     if (!p || !p.name) continue;
-    const k = p.name.toLowerCase();
-    const prev = byName[k];
+    const k = nameKey(p.name), prev = byName[k];
     if (!prev) { byName[k] = [uid, p]; continue; }
     const [old, keep] = (p.joined || 0) > (prev[1].joined || 0) ? [prev, [uid, p]] : [[uid, p], prev];
     byName[k] = keep;
@@ -789,15 +1156,17 @@ function tidyPlayers(){
   }
 }
 function playerList(players){
-  return Object.entries(players || {}).filter(([, p]) => p && p.name)
-    .sort((a, b) => (a[1].joined || 0) - (b[1].joined || 0));
+  return Object.entries(players || {}).filter(([, p]) => p && p.name).sort((a, b) => (a[1].joined || 0) - (b[1].joined || 0));
 }
-function drawPeople(box, players, meUid){
+const onlineKeys = () => new Set(playerList(room.players).filter(([, p]) => p.online !== false).map(([, p]) => nameKey(p.name)));
+function drawPeople(box, players, meKey, onTap){
   box.innerHTML = '';
-  for (const [uid, p] of playerList(players)) {
-    const s = document.createElement('span');
-    s.className = 'person' + (p.online === false ? ' off' : '') + (uid === meUid ? ' me' : '');
-    s.textContent = p.name; s.title = p.online === false ? 'nicht verbunden' : 'verbunden';
+  const seen = new Set();
+  for (const [, p] of playerList(players)) {
+    const k = nameKey(p.name); if (seen.has(k)) continue; seen.add(k);
+    const s = txt(onTap ? 'button' : 'span', 'person' + (p.online === false ? ' off' : '') + (k === meKey ? ' me' : ''), p.name);
+    s.title = p.online === false ? 'nicht verbunden' : 'verbunden';
+    if (onTap) { s.type = 'button'; s.onclick = () => onTap(k, p.name); }
     box.append(s);
   }
 }
@@ -810,29 +1179,404 @@ function drawLobby(){
       $('#qrBox').innerHTML = q.createSvgTag({ cellSize:6, margin:0, scalable:true });
     } else setTimeout(drawLobby, 400);
   }
-  const list = playerList(room.players), on = list.filter(([, p]) => p.online !== false).length;
+  const on = onlineKeys().size, list = playerList(room.players);
   $('#peopleHead').textContent = !list.length ? 'Noch niemand da' : on === 1 ? '1 Spieler ist drin' : on + ' Spieler sind drin';
   drawPeople($('#peopleList'), room.players);
-  $('#lobbyInfo').textContent = validSelection().length ? '' : 'Wähle in den Einstellungen zuerst mindestens eine Playlist.';
+  $('#lobbyInfo').textContent = !running() && !on ? 'Sobald jemand beigetreten ist, kannst du starten.' : '';
   const t = $('#toLobby'); t.hidden = false; t.textContent = 'Raum ' + room.code + ' (' + on + ')';
 }
-async function lobbyStart(){
-  if (running()) { show('game'); keepAwake(); pushState(); return; }
-  startGame();
+function lobbyStart(){
+  if (running()) { show('mgame'); renderMatch(); pushState(); return; }
+  if (!onlineKeys().size) { toast('Es ist noch niemand im Spielraum.'); return; }
+  startMatch();
 }
 async function closeRoom(){
-  if (!room.code) { openSettings(); return; }
+  if (!room.code) { openHome(); return; }
   if (!confirm('Spielraum ' + room.code + ' schließen? Alle Mitspieler fliegen raus.')) return;
   const code = room.code;
   if (room.unsub) room.unsub();
-  Object.assign(room, { code:null, players:{}, unsub:null });
+  if (room.aunsub) room.aunsub();
+  Object.assign(room, { code:null, players:{}, unsub:null, aunsub:null, seen:{} });
   store.del('room'); $('#toLobby').hidden = true;
   try { await FB.remove('rooms/' + code); } catch {}
-  openSettings();
+  openHome();
+}
+
+/* ---------- Spielablauf am Haupthandy ---------- */
+let M = null;
+let tickT = null;
+const RING = 2 * Math.PI * 46;
+const saveMatch = () => { if (M) store.set('match', M); };
+const newPlayer = name => ({ name, line:[], placed:null, result:null, ans:null, self:null, answered:false, said:'', grid:null, marks:null, canMark:null });
+const lineCard = c => ({ y:parseInt(c.year, 10), t:c.title, a:c.artist });
+function takeCard(){
+  const d = M.deck;
+  if (!d.cards.length) return null;
+  if (d.pos >= d.cards.length) { shuffle(d.cards); d.pos = 0; toast('Alle Karten waren dran. Der Stapel ist neu gemischt.'); }
+  return { ...d.cards[d.pos++] };
+}
+function dropCard(c){
+  const d = M.deck, i = d.cards.findIndex(x => x.uri === c.uri);
+  if (i < 0) return;
+  d.cards.splice(i, 1); if (i < d.pos) d.pos--;
+}
+function syncPlayers(){
+  if (!M || M.mode === 'solo' || M.phase === 'loading' && !M.deck.cards.length) { if (M && !$('#mgame').hidden) renderMatch(); return; }
+  let changed = false;
+  for (const [, info] of playerList(room.players)) {
+    const k = nameKey(info.name);
+    if (M.pl[k]) continue;
+    const p = M.pl[k] = newPlayer(info.name);
+    if (M.mode === 'turns' || M.mode === 'together') { const c = takeCard(); if (c) p.line = [lineCard(c)]; }
+    if (M.mode === 'bingo') { p.grid = makeGrid(); p.marks = Array(25).fill(false); }
+    M.order.push(k); changed = true;
+  }
+  if (M.mode === 'turns' && M.phase === 'ready' && !onlineKeys().has(M.turn)) { M.turn = nextTurn(M.turn, true); changed = true; }
+  if (changed) { saveMatch(); pushState(); }
+  if (!$('#mgame').hidden) renderMatch();
+  checkAllDone();
+}
+function nextTurn(from, includeSelf){
+  const on = onlineKeys(), o = M.order;
+  if (!o.length) return null;
+  const i = Math.max(0, o.indexOf(from));
+  for (let n = includeSelf ? 0 : 1; n <= o.length; n++) { const k = o[(i + n) % o.length]; if (on.has(k)) return k; }
+  return o[(i + 1) % o.length];
+}
+
+async function startMatch(){
+  const r = rules(), ids = validSelection();
+  if (!ids.length) { toast('Wähle unter Musik zuerst mindestens eine Playlist.'); return; }
+  activateSdk();
+  M = { mode:r.mode, phase:'loading', round:0, target:r.target, placeSecs:r.placeSecs, answerSecs:r.answerSecs, win:r.win, check:r.check,
+        colors:colorTasks().map(id => taskById(id)), deck:{ cards:[], pos:0 }, pl:{}, order:[], turn:null, cards:[], songIdx:0,
+        color:null, task:null, timer:null, winners:[], revealed:false, newCard:null, msg:'Playlists werden geladen …' };
+  show('mgame'); renderMatch(); pushState();
+  try {
+    let cards = await buildDeck(ids, t => { if (M) { M.msg = t; renderMatch(); } });
+    if (M.mode !== 'solo') cards = cards.filter(c => /^\d{4}$/.test(c.year));
+    if (cards.length < (M.mode === 'solo' ? 1 : 4)) throw new UserError('In den gewählten Playlists gibt es zu wenige abspielbare Songs.');
+    M.deck.cards = cards; M.msg = ''; M.phase = 'ready';
+    syncPlayers();
+    if (M.mode === 'turns') M.turn = nextTurn(M.order[0], true);
+    saveMatch(); pushState(); renderMatch();
+    toast(cards.length + ' Songs im Stapel.');
+  } catch (e) { M = null; store.del('match'); openHome(); handleError(e, startMatch); }
+}
+function resumeMatch(){
+  const s = store.get('match', null);
+  if (!s) return;
+  M = s; M.timer = null;
+  if (M.phase === 'playing' || M.phase === 'loading') M.phase = M.mode === 'solo' ? 'stopped' : M.mode === 'bingo' ? 'answering' : 'placing';
+  if (M.phase === 'answering') setTimer('answer', M.answerSecs);
+  if (M.phase === 'placing' && M.mode === 'together') setTimer('place', M.placeSecs);
+  activateSdk();
+  const go = () => { show('mgame'); syncPlayers(); renderMatch(); pushState(); };
+  if (M.mode !== 'solo' && !room.code) ensureRoom().then(go).catch(e => { go(); showMsg(fbFail(e)); }); else go();
+}
+function setTimer(kind, secs){
+  const total = secs * 1000;
+  M.timer = { kind, total, end:fbNow() + total, local:Date.now() + total };
+}
+function startTick(){ if (!tickT) tickT = setInterval(tick, 200); }
+function tick(){
+  if (!M) return;
+  const t = M.timer;
+  if (!t) return;
+  const left = Math.max(0, t.local - Date.now());
+  $('#mProg').style.strokeDashoffset = String(RING * Math.min(1, 1 - left / t.total));
+  $('#mProg').classList.toggle('alt', t.kind === 'place' || t.kind === 'answer');
+  $('#mCount').textContent = String(Math.ceil(left / 1000));
+  if (left > 0) return;
+  if (t.kind === 'place' && M.phase === 'placing') reveal();
+  else if (t.kind === 'answer' && M.phase === 'answering') reveal();
+  else if (t.kind === 'replay') { M.timer = null; renderMatch(); pushState(); }
+}
+
+async function drawRound(){
+  if (!M || M.phase === 'over' || M.phase === 'loading' || M.phase === 'playing') return;
+  if (M.mode === 'turns' && !M.turn) { toast('Es ist niemand verbunden.'); return; }
+  stopClip();
+  M.round++; M.revealed = false; M.newCard = null; M.songIdx = 0;
+  for (const p of Object.values(M.pl)) Object.assign(p, { placed:null, result:null, ans:null, self:null, answered:false, said:'' });
+  if (M.mode === 'bingo') { M.color = rnd(5); M.task = M.colors[M.color]; } else { M.color = null; M.task = null; }
+  const n = M.task && M.task.kind === 'two' ? 2 : 1;
+  M.cards = [];
+  for (let i = 0; i < n; i++) { const c = takeCard(); if (!c) { showMsg('Im Stapel sind keine Songs mehr.'); return; } M.cards.push(c); }
+  M.phase = 'loading'; M.msg = 'Song wird gestartet …'; renderMatch(); pushState();
+  try { await startSong(0); }
+  catch (e) { M.phase = 'ready'; M.round--; renderMatch(); pushState(); handleError(e, drawRound); }
+}
+async function startSong(i){
+  for (let tries = 0; tries < 4; tries++) {
+    const c = M.cards[i];
+    c.start = startPos(c.duration, seconds());
+    let res;
+    try { res = await playClip(c, () => songEnded(i)); }
+    catch (e) {
+      if (e instanceof SkipError) { dropCard(c); const nc = takeCard(); if (!nc) break; M.cards[i] = nc; continue; }
+      throw e;
+    }
+    if (!res) return;
+    M.songIdx = i + 1; M.phase = 'playing'; M.msg = '';
+    setTimer('song', res.dur / 1000);
+    saveMatch(); pushState(); renderMatch();
+    clipRunsFine(c, res.tok).then(ok => {
+      if (ok || res.tok !== clip.token || !M) return;
+      clip.token++; clearTimeout(clip.timer);
+      dropCard(c); const nc = takeCard(); if (!nc) return;
+      M.cards[i] = nc; M.phase = 'loading'; M.msg = 'Nächster Versuch …'; renderMatch();
+      startSong(i).catch(e => { M.phase = 'ready'; M.round--; renderMatch(); pushState(); handleError(e, drawRound); });
+    }).catch(e => handleError(e));
+    return;
+  }
+  throw new UserError('Vier Songs hintereinander ließen sich nicht abspielen. Prüfe, ob Spotify auf dem Abspielgerät läuft.');
+}
+function songEnded(i){
+  if (!M || M.phase !== 'playing') return;
+  if (M.cards.length === 2 && i === 0) {
+    M.phase = 'loading'; M.msg = 'Song 2 wird gestartet …'; renderMatch(); pushState();
+    startSong(1).catch(e => { afterSongs(); handleError(e); });
+    return;
+  }
+  afterSongs();
+}
+function afterSongs(){
+  M.timer = null;
+  if (M.mode === 'solo') M.phase = 'stopped';
+  else if (M.mode === 'turns') M.phase = 'placing';
+  else if (M.mode === 'together') { M.phase = 'placing'; setTimer('place', M.placeSecs); }
+  else { M.phase = 'answering'; setTimer('answer', M.answerSecs); }
+  saveMatch(); pushState(); renderMatch();
+  checkAllDone();
+}
+function stopSongEarly(){
+  if (!M) return;
+  if (M.timer && M.timer.kind === 'replay') { stopClip(); M.timer = null; renderMatch(); pushState(); return; }
+  if (M.phase !== 'playing') return;
+  stopClip();
+  songEnded(M.songIdx - 1);
+}
+function checkAllDone(){
+  if (!M || M.revealed) return;
+  const active = [...onlineKeys()].filter(k => M.pl[k]);
+  if (!active.length) return;
+  if (M.mode === 'together' && M.phase === 'placing' && active.every(k => M.pl[k].placed !== null)) reveal();
+  if (M.mode === 'bingo' && M.phase === 'answering' && needsInput(M.task, M.check) && active.every(k => M.pl[k].answered)) reveal();
+}
+function placeOk(line, gap, y){
+  const before = line[gap - 1], after = line[gap];
+  return (!before || before.y <= y) && (!after || y <= after.y);
+}
+function reveal(){
+  if (!M || M.revealed) return;
+  if (M.phase === 'playing' || M.phase === 'loading') stopClip();
+  M.timer = null; M.revealed = true; M.phase = 'reveal';
+  const c = M.cards[0], y = parseInt(c.year, 10);
+  if (M.mode === 'turns' || M.mode === 'together') {
+    const keys = M.mode === 'turns' ? [M.turn] : Object.keys(M.pl);
+    for (const k of keys) {
+      const p = M.pl[k]; if (!p) continue;
+      if (p.placed === null) { p.result = M.mode === 'turns' ? 'wrong' : null; continue; }
+      p.result = placeOk(p.line, p.placed, y) ? 'right' : 'wrong';
+      if (p.result === 'right') { p.line.push(lineCard(c)); p.line.sort((a, b) => a.y - b.y); }
+    }
+    M.newCard = lineCard(c);
+    const won = Object.entries(M.pl).filter(([, p]) => p.line.length >= M.target).map(([k]) => k);
+    if (won.length) { M.winners = won; M.phase = 'over'; }
+  }
+  if (M.mode === 'bingo') {
+    for (const p of Object.values(M.pl)) {
+      if (!p.answered && needsInput(M.task, M.check)) { p.result = null; continue; }
+      settleBingo(p);
+    }
+  }
+  saveMatch(); pushState(); renderMatch();
+}
+function settleBingo(p){
+  const r = evalTask(M.task, M.check, p.ans, M.cards, p.self);
+  p.result = r === null ? 'pending' : r ? 'right' : 'wrong';
+  p.said = saidText(M.task, p.ans);
+  if (p.result === 'right' && p.grid.some((g, i) => g === M.color && !p.marks[i])) p.canMark = M.color;
+}
+function forceReveal(){ if (M && ['placing', 'answering', 'playing', 'loading'].includes(M.phase) && M.round) reveal(); }
+function nextRound(){
+  if (!M) return;
+  stopClip(); M.timer = null;
+  if (M.mode === 'turns') { M.turn = nextTurn(M.turn, false); M.phase = 'ready'; M.revealed = false; M.cards = []; saveMatch(); pushState(); renderMatch(); return; }
+  M.phase = 'ready'; drawRound();
+}
+async function replay(){
+  if (!M || !M.cards.length) return;
+  const i = Math.max(0, (M.songIdx || 1) - 1);
+  try {
+    const res = await playClip(M.cards[i], () => { if (M) { M.timer = null; renderMatch(); pushState(); } });
+    if (res) { setTimer('replay', res.dur / 1000); renderMatch(); pushState(); }
+  } catch (e) { if (e instanceof SkipError) showMsg('Spotify spielt diesen Song gerade nicht ab.'); else handleError(e, replay); }
+}
+function soloFlip(){ if (M && M.phase === 'stopped') { M.phase = 'reveal'; M.revealed = true; saveMatch(); pushState(); renderMatch(); } }
+function endMatchToHome(){
+  if (running() && M.round && !confirm('Zurück ins Menü? Das Spiel bleibt gespeichert, du kannst später weiterspielen.')) return;
+  stopClip();
+  if (M && (M.phase === 'over' || !M.round)) store.del('match');
+  M = null;
+  pushState();
+  openHome();
+}
+function newGameSameRoom(){
+  stopClip(); M = null; store.del('match'); pushState();
+  if (room.code) openLobby(); else openHome();
+}
+
+/* Aktionen der Spielerhandys */
+function onActions(all){
+  for (const [uid, act] of Object.entries(all)) {
+    if (!act || !act.id || room.seen[uid] === act.id) continue;
+    room.seen[uid] = act.id;
+    if (!M) continue;
+    const info = room.players[uid]; if (!info || !info.name) continue;
+    const k = nameKey(info.name), p = M.pl[k];
+    if (p) handleAction(k, p, act);
+  }
+}
+function handleAction(k, p, a){
+  if (a.t === 'draw') { if (M.mode === 'turns' && M.phase === 'ready' && M.turn === k && a.round === M.round) drawRound(); return; }
+  if (a.t === 'place') {
+    if (M.phase !== 'placing' || a.round !== M.round) return;
+    if (M.mode === 'turns' && M.turn !== k) return;
+    const g = Number(a.gap); if (!(g >= 0 && g <= p.line.length)) return;
+    p.placed = g; saveMatch();
+    if (M.mode === 'turns') reveal(); else { pushState(); renderMatch(); checkAllDone(); }
+    return;
+  }
+  if (a.t === 'answer') {
+    if (M.mode !== 'bingo' || a.round !== M.round || M.revealed) return;
+    p.ans = a.ans || {}; p.answered = true; saveMatch(); pushState(); renderMatch(); checkAllDone();
+    return;
+  }
+  if (a.t === 'self') {
+    if (M.mode !== 'bingo' || a.round !== M.round || p.result !== 'pending') return;
+    p.self = a.self || {}; settleBingo(p); saveMatch(); pushState(); renderMatch();
+    return;
+  }
+  if (a.t === 'mark') {
+    if (M.mode !== 'bingo' || p.canMark === null || p.canMark === undefined) return;
+    const i = Number(a.idx);
+    if (!(i >= 0 && i < 25) || p.grid[i] !== p.canMark || p.marks[i]) return;
+    p.marks[i] = true; p.canMark = null;
+    if (bingoWon(p.marks, M.win)) { if (!M.winners.includes(k)) M.winners.push(k); M.phase = 'over'; }
+    saveMatch(); pushState(); renderMatch();
+  }
+}
+
+/* Zustand für alle Handys veröffentlichen */
+function pushState(){
+  if (!room.code || !FB.uid) return;
+  if (!M) { FB.set('rooms/' + room.code + '/state', { phase:'lobby', mode:rules().mode }).catch(() => {}); return; }
+  const open = M.revealed || M.phase === 'over';
+  const pl = {};
+  for (const [k, p] of Object.entries(M.pl)) {
+    pl[k] = { name:p.name, line:p.line, placed:p.placed !== null, answered:!!p.answered, result:p.result || null,
+              gap:open && p.placed !== null ? p.placed : null, said:open ? (p.said || '') : '',
+              grid:p.grid || null, marks:p.marks || null, canMark:p.canMark === undefined ? null : p.canMark };
+  }
+  const t = M.timer;
+  const st = {
+    mode:M.mode, phase:M.phase, round:M.round, target:M.target || 0, win:M.win, check:M.check,
+    turn:M.turn || null, order:M.order, songIdx:M.songIdx || 0, songs:M.cards.length,
+    timer:t ? { kind:t.kind, total:t.total, end:t.end } : null,
+    color:M.color, task:M.task || null,
+    cards:open && M.cards.length ? M.cards.map(c => ({ title:c.title, artist:c.artist, year:c.year, album:c.album })) : null,
+    newCard:open ? M.newCard : null, winners:M.winners, pl,
+    n:M.deck.pos, total:M.deck.cards.length
+  };
+  FB.set('rooms/' + room.code + '/state', JSON.parse(JSON.stringify(st))).catch(() => {});
+}
+
+/* Anzeige am Haupthandy */
+const yearColor = y => 'hsl(' + (isNaN(y) ? 300 : Math.min(315, Math.max(25, 25 + (y - 1950) / 76 * 290))).toFixed(0) + ' 85% 70%)';
+function cardHtml(c, label){
+  return '<article class="card" style="background:' + yearColor(parseInt(c.year, 10)) + '">' + (label ? '<p class="no">' + esc(label) + '</p>' : '') +
+    '<p class="year">' + esc(c.year) + '</p><p class="title">' + esc(c.title) + '</p><p class="artist">' + esc(c.artist) + '</p>' +
+    (c.album ? '<p class="album">Album: ' + esc(c.album) + '</p>' : '') + '</article>';
+}
+function bannerHtml(colorIdx, task){
+  const c = COLORS[colorIdx];
+  return '<div class="banner" style="background:' + c.bg + ';color:' + c.fg + '"><div class="bc">' + esc(c.name) + '</div><div class="bt">' + esc(task.name) + '</div></div>';
+}
+function setHtml(node, html){ if (node.dataset.html !== html) { node.innerHTML = html; node.dataset.html = html; } }
+function renderMatch(){
+  if (!M || $('#mgame').hidden) return;
+  startTick();
+  const name = k => (M.pl[k] && M.pl[k].name) || '';
+  $('#mInfo').textContent = M.round ? MODES[M.mode].name + ', Runde ' + M.round : MODES[M.mode].name;
+  $('#toLobby').hidden = !room.code;
+  if (M.mode === 'bingo' && M.color !== null && M.task && M.round && M.phase !== 'ready') setHtml($('#mBanner'), bannerHtml(M.color, M.task));
+  else if (M.mode === 'turns' && M.turn && M.phase !== 'over' && M.phase !== 'loading') setHtml($('#mBanner'), '<div class="banner plain"><div class="muted small">Am Zug</div><div class="bc">' + esc(name(M.turn)) + '</div></div>');
+  else setHtml($('#mBanner'), '');
+  const showCards = M.revealed && M.cards.length > 0;
+  const replaying = !!(M.timer && M.timer.kind === 'replay');
+  $('#mDisc').hidden = (showCards && !replaying) || M.phase === 'over';
+  $('#mCards').hidden = !showCards || (M.phase === 'over' && M.mode === 'bingo');
+  $('#mCards').className = 'cards' + (M.cards.length > 1 ? ' two' : '');
+  if (showCards) setHtml($('#mCards'), M.cards.map((c, i) => cardHtml(c, M.cards.length > 1 ? 'Song ' + (i + 1) : '')).join(''));
+  $('#mRecord').classList.toggle('spin', M.phase === 'playing' || replaying);
+  if (!M.timer) { $('#mProg').style.strokeDashoffset = M.phase === 'stopped' || M.phase === 'placing' || M.phase === 'answering' ? String(RING) : '0'; $('#mCount').textContent = ''; }
+  const total = [...onlineKeys()].filter(k => M.pl[k]).length;
+  const placedN = Object.values(M.pl).filter(p => p.placed !== null).length, answeredN = Object.values(M.pl).filter(p => p.answered).length;
+  const status = {
+    loading:M.msg || 'Einen Moment …',
+    ready:M.mode === 'turns' ? name(M.turn) + ' zieht die nächste Karte, am eigenen Handy oder hier.' : 'Bereit für die nächste Runde.',
+    playing:M.cards.length === 2 ? 'Song ' + M.songIdx + ' von 2 läuft' : 'Hör genau hin',
+    placing:M.mode === 'turns' ? name(M.turn) + ' ordnet ein …' : placedN + ' von ' + total + ' haben eingeordnet',
+    answering:needsInput(M.task, M.check) ? answeredN + ' von ' + total + ' haben geantwortet' : 'Jetzt laut antworten, dann aufdecken.',
+    stopped:'Zeit um. Aus welchem Jahr ist der Song?'
+  }[M.phase] || '';
+  $('#mStatus').textContent = replaying ? 'Läuft nochmal' : status;
+  let res = '';
+  if (M.phase === 'over') res = '<div class="win"><div class="muted">Gewonnen hat</div><div class="wt">' + esc(M.winners.map(name).join(' und ') || 'niemand') + '</div></div>';
+  else if (M.revealed && M.mode === 'turns') {
+    const p = M.pl[M.turn];
+    if (p) res = p.result === 'right' ? '<div class="result good">' + esc(p.name) + ' lag richtig und hat jetzt ' + p.line.length + ' Karten.</div>'
+                                      : '<div class="result no">' + esc(p.name) + (p.placed === null ? ' hat nicht eingeordnet.' : ' lag daneben.') + '</div>';
+  }
+  setHtml($('#mResult'), res);
+  const acts = $('#mActions'); acts.innerHTML = '';
+  const btn = (label, fn, primary) => { const b = txt('button', 'btn ' + (primary ? 'primary' : 'secondary'), label); b.type = 'button'; b.onclick = fn; acts.append(b); };
+  if (M.phase === 'ready') btn(M.mode === 'turns' ? 'Karte für ' + name(M.turn) + ' ziehen' : M.round ? 'Nächste Runde' : 'Erste Karte ziehen', drawRound, true);
+  if (M.phase === 'playing' || replaying) btn('Song stoppen', stopSongEarly, false);
+  if (M.phase === 'placing' || M.phase === 'answering') btn('Jetzt aufdecken', forceReveal, M.mode === 'bingo' && !needsInput(M.task, M.check));
+  if (M.phase === 'stopped') { btn('Karte umdrehen', soloFlip, true); btn('Nochmal hören', replay, false); }
+  if (M.phase === 'reveal') {
+    btn(M.mode === 'turns' ? 'Weiter mit ' + name(nextTurn(M.turn, false)) : M.mode === 'bingo' ? 'Nächste Runde' : 'Nächste Karte', nextRound, true);
+    if (!replaying) btn('Nochmal hören', replay, false);
+  }
+  if (M.phase === 'over') { btn('Neues Spiel', newGameSameRoom, true); btn('Zum Menü', endMatchToHome, false); }
+  renderBoard();
+}
+function renderBoard(){
+  const box = $('#mBoard'); box.innerHTML = '';
+  if (M.mode === 'solo') { if (M.deck.cards.length) box.append(Object.assign(txt('p', 'muted small', 'Karte ' + Math.min(M.deck.pos, M.deck.cards.length) + ' von ' + M.deck.cards.length), { style:'text-align:center' })); return; }
+  const on = onlineKeys();
+  for (const k of M.order) {
+    const p = M.pl[k]; if (!p) continue;
+    const row = el('div', 'prow' + (M.mode === 'turns' && M.turn === k && M.phase !== 'over' ? ' turn' : '') + (on.has(k) ? '' : ' off'));
+    let info = '';
+    if (M.mode === 'together' && M.phase === 'placing') info = p.placed !== null ? '✓ eingeordnet' : '…';
+    if (M.mode === 'bingo' && !M.revealed && M.round && needsInput(M.task, M.check)) info = p.answered ? '✓ geantwortet' : '…';
+    if (M.revealed && p.result) {
+      const t = p.result === 'right' ? '<span class="ok">richtig</span>' : p.result === 'wrong' ? '<span class="bad">falsch</span>' : 'bewertet sich …';
+      info = (p.said ? esc(p.said) + ', ' : '') + t;
+    }
+    if (M.mode === 'bingo' && p.canMark !== null && p.canMark !== undefined) info += ', wählt ein Feld';
+    const score = M.mode === 'bingo' ? 'noch ' + bingoMissing(p.marks, M.win) : p.line.length + '/' + M.target;
+    row.innerHTML = '<span class="pn">' + esc(p.name) + '</span><span class="pi">' + info + '</span><span class="ps">' + esc(score) + '</span>';
+    box.append(row);
+  }
 }
 
 /* ---------- Spielerhandy ---------- */
-const seat = { code:null, name:'', unsub:null, presence:null, room:null, tick:null };
+const seat = { code:null, name:'', key:'', unsub:null, presence:null, room:null, tick:null, sel:null, selRound:-1, formKey:'', form:null, selfAns:{} };
 
 function openJoin(code){
   show('pjoin');
@@ -852,7 +1596,7 @@ async function joinRoom(){
     await FB.start();
     if (await FB.get('rooms/' + code + '/host') === null) { err.textContent = 'Diesen Spielraum gibt es nicht. Prüf den Code.'; return; }
     const players = (await FB.get('rooms/' + code + '/players')) || {};
-    const clash = Object.entries(players).find(([uid, p]) => uid !== FB.uid && p && p.name && p.name.toLowerCase() === name.toLowerCase() && p.online !== false);
+    const clash = Object.entries(players).find(([uid, p]) => uid !== FB.uid && p && p.name && nameKey(p.name) === nameKey(name) && p.online !== false);
     if (clash) { err.textContent = 'Der Name ist schon vergeben. Nimm einen anderen.'; return; }
     await FB.set('rooms/' + code + '/players/' + FB.uid, { name, joined:FB.stamp(), online:true });
     store.set('join', { code, name });
@@ -862,8 +1606,8 @@ async function joinRoom(){
 }
 function enterRoom(code, name){
   leaveListeners();
-  Object.assign(seat, { code, name, room:null });
-  show('pplay'); keepAwake();
+  Object.assign(seat, { code, name, key:nameKey(name), room:null, sel:null, selRound:-1, formKey:'', form:null, selfAns:{} });
+  show('pplay');
   $('#rejoinBtn').hidden = true;
   $('#pRoomInfo').textContent = name + ' in Raum ' + code;
   seat.presence = FB.presence('rooms/' + code + '/players/' + FB.uid, { online:true, name }, { online:false });
@@ -882,98 +1626,234 @@ async function leaveRoom(){
   leaveListeners();
   FB.cancelPresence(path);
   try { await FB.remove(path); } catch {}
-  store.del('join'); releaseAwake();
+  store.del('join');
   openJoin(seat.code);
+}
+function send(act){
+  const st = seat.room && seat.room.state;
+  const a = { ...act, round:st ? st.round : 0, id:randStr(6), at:FB.stamp() };
+  return FB.set('rooms/' + seat.code + '/actions/' + FB.uid, a).catch(() => toast('Senden hat nicht geklappt. Prüf das Internet.'));
+}
+function playerGone(text){
+  leaveListeners(); store.del('join');
+  $('#pMini').hidden = true; $('#pCards').hidden = true;
+  ['#pBanner', '#pResult', '#pMain', '#pActions', '#pOthers'].forEach(s => { $(s).innerHTML = ''; delete $(s).dataset.html; });
+  seat.formKey = '';
+  $('#pWait').hidden = false; $('#pWait').textContent = text; $('#rejoinBtn').hidden = false;
 }
 function drawPlayer(r){
   seat.room = r;
-  const wait = $('#pWait'), back = $('#pBack'), front = $('#pFront'), status = $('#pStatus');
-  if (!r || !r.host) {
-    leaveListeners(); releaseAwake();
-    back.hidden = true; front.hidden = true; status.textContent = '';
-    wait.hidden = false; wait.textContent = 'Der Spielraum wurde geschlossen.';
-    $('#pPeople').innerHTML = ''; $('#rejoinBtn').hidden = false; store.del('join');
-    return;
-  }
+  if (!r || !r.host) { playerGone('Der Spielraum wurde geschlossen.'); return; }
   if ((!r.players || r.players[FB.uid] === undefined) && seat.name) {
-    const taken = Object.values(r.players || {}).some(p => p && p.name && p.name.toLowerCase() === seat.name.toLowerCase());
-    if (taken) {
-      leaveListeners(); releaseAwake(); store.del('join');
-      back.hidden = true; front.hidden = true; status.textContent = '';
-      wait.hidden = false; wait.textContent = 'Du spielst jetzt auf einem anderen Handy weiter.';
-      $('#rejoinBtn').hidden = false;
-      return;
-    }
+    const taken = Object.values(r.players || {}).some(p => p && p.name && nameKey(p.name) === seat.key);
+    if (taken) { playerGone('Du spielst jetzt auf einem anderen Handy weiter.'); return; }
     FB.set('rooms/' + seat.code + '/players/' + FB.uid, { name:seat.name, joined:FB.stamp(), online:true }).catch(() => {});
   }
-  drawPeople($('#pPeople'), r.players, FB.uid);
   const st = r.state || { phase:'lobby' };
-  const showCard = st.revealed && st.card;
-  front.hidden = !showCard; back.hidden = !!showCard || st.phase === 'lobby';
-  wait.hidden = st.phase !== 'lobby';
-  $('#pRecord').classList.toggle('spin', st.phase === 'playing');
-  if (st.phase === 'lobby') { wait.textContent = 'Du bist drin. Warte, bis das Haupthandy das Spiel startet.'; status.textContent = ''; }
-  if (showCard) {
-    paintCard('p', st.card);
-    status.textContent = st.phase === 'playing' ? 'Läuft nochmal' : '';
-  } else if (st.phase !== 'lobby') {
-    status.textContent = { loading:'Gleich geht’s los …', ready:'Gleich kommt die nächste Karte.', playing:'Hör genau hin',
-                           stopped:'Zeit um. Aus welchem Jahr ist der Song?' }[st.phase] || '';
-    if (st.phase !== 'playing') { $('#pProg').style.strokeDashoffset = String(st.phase === 'stopped' ? RING : 0); $('#pCount').textContent = st.phase === 'stopped' ? '0' : ''; }
+  const meP = st.pl && st.pl[seat.key];
+  const wait = $('#pWait'), mini = $('#pMini'), cards = $('#pCards');
+  $('#pRoomInfo').textContent = seat.name + ' in Raum ' + seat.code + (st.round ? ', Runde ' + st.round : '');
+  if (st.phase === 'lobby' || !st.mode || (st.mode !== 'solo' && !meP)) {
+    mini.hidden = true; cards.hidden = true;
+    ['#pBanner', '#pResult', '#pMain', '#pActions'].forEach(s => { $(s).innerHTML = ''; delete $(s).dataset.html; });
+    seat.formKey = '';
+    wait.hidden = false;
+    wait.textContent = st.phase === 'lobby' || !st.phase ? 'Du bist drin. Warte, bis das Haupthandy das Spiel startet.' + (st.mode ? ' Gespielt wird: ' + MODES[st.mode].name + '.' : '')
+                                         : st.phase === 'loading' ? 'Das Spiel wird vorbereitet …' : 'Gleich bist du dabei …';
+    drawOthers(r, st); return;
   }
-  $('#pRoomInfo').textContent = seat.name + ' in Raum ' + seat.code + (st.total ? ', Karte ' + st.n + ' von ' + st.total : '');
+  wait.hidden = true;
+  const name = k => (st.pl && st.pl[k] && st.pl[k].name) || '';
+  const myTurn = st.mode === 'turns' && st.turn === seat.key;
+  const replaying = !!(st.timer && st.timer.kind === 'replay');
+  if (st.mode === 'bingo' && st.task && st.color !== null && st.color !== undefined && st.round && st.phase !== 'ready') setHtml($('#pBanner'), bannerHtml(st.color, st.task));
+  else if (st.mode === 'turns' && st.turn && st.phase !== 'over') setHtml($('#pBanner'), '<div class="banner plain"><div class="muted small">Am Zug</div><div class="bc">' + (myTurn ? 'Du' : esc(name(st.turn))) + '</div></div>');
+  else setHtml($('#pBanner'), '');
+  const showCards = !!(st.cards && st.cards.length);
+  mini.hidden = st.phase === 'over' || (showCards && !replaying) || (st.phase === 'ready' && st.mode !== 'turns') || !st.round && st.mode !== 'turns';
+  $('#pRecord').classList.toggle('spin', st.phase === 'playing' || replaying);
+  $('#pStatus').textContent = replaying ? 'Läuft nochmal' : {
+    loading:'Gleich geht’s los …',
+    ready:st.mode === 'turns' ? (myTurn ? 'Du bist dran. Zieh eine Karte.' : name(st.turn) + ' ist dran.') : 'Gleich kommt die nächste Karte.',
+    playing:st.songs === 2 ? 'Song ' + st.songIdx + ' von 2 läuft' : 'Hör genau hin',
+    placing:st.mode === 'turns' ? (myTurn ? 'Wo gehört der Song hin?' : name(st.turn) + ' ordnet ein …') : (meP && meP.placed ? 'Eingeordnet. Warte auf die anderen.' : 'Wo gehört der Song hin?'),
+    answering:needsInput(st.task, st.check) ? (meP && meP.answered ? 'Antwort abgeschickt. Warte auf die anderen.' : 'Jetzt antworten') : 'Sag deine Antwort laut.',
+    stopped:'Zeit um.'
+  }[st.phase] || '';
+  if (!st.timer) { $('#pProg').style.strokeDashoffset = st.phase === 'placing' || st.phase === 'answering' ? String(RING) : '0'; $('#pCount').textContent = ''; }
+  $('#pProg').classList.toggle('alt', !!st.timer && (st.timer.kind === 'place' || st.timer.kind === 'answer'));
+  cards.hidden = !showCards || (st.phase === 'over' && st.mode === 'bingo');
+  if (showCards) { cards.className = 'cards' + (st.cards.length > 1 ? ' two' : ''); setHtml(cards, st.cards.map((c, i) => cardHtml(c, st.cards.length > 1 ? 'Song ' + (i + 1) : '')).join('')); }
+  let res = '';
+  if (st.phase === 'over') {
+    const w = (st.winners || []).map(k => k === seat.key ? 'Du' : name(k));
+    res = '<div class="win"><div class="muted">Gewonnen hat</div><div class="wt">' + esc(w.join(' und ') || 'niemand') + '</div></div>';
+  } else if (showCards && st.mode === 'turns') {
+    const tp = st.pl[st.turn];
+    if (tp && tp.result) res = tp.result === 'right' ? '<div class="result good">' + (myTurn ? 'Richtig! Die Karte bleibt bei dir.' : esc(tp.name) + ' lag richtig.') + '</div>'
+                                                     : '<div class="result no">' + (myTurn ? 'Daneben. Die Karte ist weg.' : esc(tp.name) + ' lag daneben.') + '</div>';
+  } else if (showCards && st.mode === 'together' && meP) {
+    res = meP.result === 'right' ? '<div class="result good">Richtig! Die Karte bleibt bei dir.</div>' : meP.result === 'wrong' ? '<div class="result no">Daneben. Die Karte ist weg.</div>' : '<div class="result no">Nicht rechtzeitig eingeordnet.</div>';
+  } else if (showCards && st.mode === 'bingo' && meP) {
+    const can = meP.canMark !== null && meP.canMark !== undefined;
+    res = meP.result === 'right' ? '<div class="result good">Richtig!' + (can ? ' Tippe ein ' + COLORS[meP.canMark].name.toLowerCase() + 'es Feld an.' : '') + '</div>'
+        : meP.result === 'wrong' ? '<div class="result no">Leider falsch.</div>'
+        : meP.result === 'pending' ? '<div class="result info">Hattest du es richtig?</div>'
+        : '<div class="result no">Keine Antwort abgegeben.</div>';
+  }
+  setHtml($('#pResult'), res);
+  if (st.mode === 'turns' || st.mode === 'together') drawTimelineArea(st, meP, myTurn);
+  else if (st.mode === 'bingo') drawBingoArea(st, meP);
+  else { $('#pMain').innerHTML = ''; $('#pActions').innerHTML = ''; }
+  drawOthers(r, st);
   playerTick();
+}
+function lineHtml(line){
+  return (line || []).map(c => '<div class="tlc" style="background:' + yearColor(c.y) + '"><span class="ty">' + c.y + '</span><span class="tt">' + esc(c.t) + '<br><span>' + esc(c.a) + '</span></span></div>').join('');
+}
+function drawTimelineArea(st, meP, myTurn){
+  const main = $('#pMain'), acts = $('#pActions');
+  if (!meP) { main.innerHTML = ''; acts.innerHTML = ''; return; }
+  const canPlace = st.phase === 'placing' && (st.mode === 'together' || myTurn);
+  if (seat.selRound !== st.round) { seat.sel = null; seat.selRound = st.round; }
+  if (!canPlace && !st.cards) seat.sel = null;
+  const line = meP.line || [];
+  main.innerHTML = '';
+  const head = el('div', 'tlhead');
+  head.append(txt('h2', '', 'Dein Zeitstrahl'), txt('span', 'muted small', line.length + ' von ' + st.target + ' Karten'));
+  const tl = el('div', 'tl');
+  const isNew = c => st.cards && st.newCard && meP.result === 'right' && c.y === st.newCard.y && c.t === st.newCard.t;
+  for (let i = 0; i <= line.length; i++) {
+    const end = i === 0 || i === line.length;
+    const g = el('button', 'gap' + (end ? ' end' : '')); g.type = 'button';
+    g.textContent = canPlace ? (i === 0 ? 'früher' : i === line.length ? 'später' : 'dazwischen') : (i === 0 && line.length ? 'früher' : i === line.length && line.length ? 'später' : '');
+    if (canPlace) {
+      if (seat.sel === i) { g.classList.add('on'); g.textContent = 'Hier einordnen'; }
+      g.onclick = () => { seat.sel = i; drawTimelineArea(st, meP, myTurn); };
+    } else g.disabled = true;
+    tl.append(g);
+    if (i < line.length) {
+      const c = line[i], d = el('div', 'tlc' + (isNew(c) ? ' new' : ''));
+      d.style.background = yearColor(c.y);
+      d.append(txt('span', 'ty', String(c.y)));
+      const tt = txt('span', 'tt', c.t); tt.append(el('br'), txt('span', '', c.a)); d.append(tt);
+      tl.append(d);
+    }
+  }
+  main.append(head, tl);
+  acts.innerHTML = '';
+  if (st.mode === 'turns' && myTurn && st.phase === 'ready') {
+    const b = txt('button', 'btn primary', 'Karte ziehen'); b.type = 'button'; b.onclick = () => { b.disabled = true; b.textContent = 'Gesendet'; send({ t:'draw' }); }; acts.append(b);
+  }
+  if (canPlace) {
+    const b = txt('button', 'btn primary', meP.placed && st.mode === 'together' ? 'Neu einordnen' : 'Einordnen bestätigen'); b.type = 'button';
+    b.disabled = seat.sel === null;
+    b.onclick = () => { if (seat.sel === null) return; send({ t:'place', gap:seat.sel }); b.disabled = true; b.textContent = 'Gesendet'; };
+    acts.prepend(b);
+  }
+}
+function drawBingoArea(st, meP){
+  const main = $('#pMain'), acts = $('#pActions');
+  if (!meP || !meP.grid) { main.innerHTML = ''; acts.innerHTML = ''; seat.formKey = ''; return; }
+  const answering = !!(st.round && st.task && !st.cards && ['playing', 'answering', 'loading'].includes(st.phase));
+  const fkey = st.round + '|' + (answering ? 'a' : 'x');
+  if (seat.formKey !== fkey) {
+    seat.formKey = fkey; seat.selfAns = {}; seat.form = null;
+    main.innerHTML = '';
+    const formBox = el('div', 'box'); formBox.id = 'pForm';
+    const gridBox = el('div'); gridBox.id = 'pGridBox';
+    const fa = el('div', 'actions'); fa.id = 'pFormActs';
+    main.append(formBox, fa, gridBox);
+    if (answering) {
+      const f = buildAnswerForm(st.task, st.check, formBox, { onChange:() => { const e = $('#pFormErr'); if (e) e.textContent = ''; } });
+      if (needsInput(st.task, st.check)) { seat.form = f; const e = el('p', 'err'); e.id = 'pFormErr'; formBox.append(e); }
+    } else formBox.remove();
+  }
+  acts.innerHTML = '';
+  const fa = $('#pFormActs'); fa.innerHTML = '';
+  if (answering && seat.form) {
+    const b = txt('button', 'btn primary', meP.answered ? 'Antwort ändern' : 'Antwort abschicken'); b.type = 'button';
+    b.onclick = () => {
+      const v = seat.form.val, has = Object.values(v).some(x => x !== undefined && String(x).trim() !== '');
+      const err = $('#pFormErr');
+      if (!has) { err.textContent = 'Gib zuerst eine Antwort ein.'; return; }
+      if (v.year && !/^\d{4}$/.test(v.year)) { err.textContent = 'Das Jahr hat vier Ziffern, zum Beispiel 1987.'; return; }
+      if (v.diff && !/^\d{1,3}$/.test(v.diff)) { err.textContent = 'Gib den Abstand als ganze Zahl ein.'; return; }
+      send({ t:'answer', ans:{ ...v } }); b.textContent = 'Gesendet';
+    };
+    fa.append(b);
+  }
+  if (st.cards && meP.result === 'pending') {
+    const parts = selfParts(st.task, st.check);
+    const box = el('div', 'box');
+    parts.forEach((k, idx) => {
+      const row = el('div', 'row2' + (idx ? '' : ' first')), g = el('div', 'seg');
+      for (const [v, t] of [[true, 'Ja'], [false, 'Nein']]) {
+        const b = txt('button', seat.selfAns[k] === v ? 'on' : '', t); b.type = 'button';
+        b.onclick = () => { seat.selfAns[k] = v; drawBingoArea(st, meP); };
+        g.append(b);
+      }
+      row.append(txt('span', '', k === 'free' ? 'Geschafft?' : (k === 'title' ? 'Titel' : 'Künstler') + ' gewusst?'), g);
+      box.append(row);
+    });
+    const ok = txt('button', 'btn primary', 'Bewertung abschicken'); ok.type = 'button';
+    ok.disabled = !parts.every(k => seat.selfAns[k] !== undefined);
+    ok.onclick = () => { send({ t:'self', self:{ ...seat.selfAns } }); ok.disabled = true; ok.textContent = 'Gesendet'; };
+    fa.append(box, ok);
+  }
+  const gb = $('#pGridBox'); gb.innerHTML = '';
+  const can = meP.canMark !== null && meP.canMark !== undefined ? meP.canMark : null;
+  const head = el('div', 'tlhead');
+  head.append(txt('h2', '', 'Deine Bingokarte'), txt('span', 'muted small', (st.win === 'full' ? 'Volle Karte' : 'Eine Reihe') + ', noch ' + bingoMissing(meP.marks, st.win) + ' Felder'));
+  const grid = el('div', 'bgrid');
+  meP.grid.forEach((ci, i) => {
+    const c = COLORS[ci], marked = meP.marks && meP.marks[i], b = txt('button', 'cell', marked ? '✓' : ''); b.type = 'button';
+    b.style.background = c.bg; b.style.color = c.fg;
+    b.setAttribute('aria-label', c.name + (marked ? ', markiert' : ''));
+    const pickable = can !== null && ci === can && !marked;
+    if (can !== null && !pickable && !marked) b.classList.add('dim');
+    if (pickable) {
+      b.classList.add('pickme');
+      b.onclick = () => { send({ t:'mark', idx:i }); b.textContent = '✓'; grid.querySelectorAll('.pickme').forEach(x => { x.classList.remove('pickme'); x.onclick = null; x.disabled = true; }); };
+    } else b.disabled = true;
+    grid.append(b);
+  });
+  gb.append(head, grid);
+}
+function drawOthers(r, st){
+  const box = $('#pOthers'); box.innerHTML = '';
+  if (!r.players) return;
+  const timeline = (st.mode === 'turns' || st.mode === 'together') && st.pl && st.phase !== 'lobby';
+  box.append(txt('div', 'muted small', timeline ? 'Mitspieler, antippen für ihren Zeitstrahl' : 'Mitspieler'));
+  const ppl = el('div', 'people'); ppl.style.marginTop = '.4rem';
+  drawPeople(ppl, r.players, seat.key, timeline ? (k, n) => {
+    const p = st.pl[k]; if (!p) return;
+    $('#peekTitle').textContent = k === seat.key ? 'Dein Zeitstrahl' : 'Zeitstrahl von ' + n;
+    $('#peekBody').innerHTML = '<div class="tl">' + (lineHtml(p.line) || '<p class="muted">Noch keine Karten.</p>') + '</div>';
+    $('#peek').hidden = false;
+  } : null);
+  box.append(ppl);
 }
 function playerTick(){
   const st = seat.room && seat.room.state;
-  if (!st || st.phase !== 'playing' || !st.endsAt || (st.revealed && st.card)) return;
-  const total = (st.secs || 20) * 1000, left = Math.max(0, st.endsAt - FB.now());
-  $('#pProg').style.strokeDashoffset = String(RING * Math.min(1, 1 - left / total));
+  if (!st || !st.timer) return;
+  const t = st.timer, left = Math.max(0, t.end - FB.now());
+  $('#pProg').style.strokeDashoffset = String(RING * Math.min(1, 1 - left / t.total));
   $('#pCount').textContent = String(Math.ceil(left / 1000));
 }
 
 /* ---------- Bildschirm wach halten ---------- */
 let wakeLock = null;
 async function keepAwake(){
-  try { if ('wakeLock' in navigator && (!$('#game').hidden || !$('#pplay').hidden) && document.visibilityState === 'visible' && !wakeLock) { wakeLock = await navigator.wakeLock.request('screen'); wakeLock.addEventListener('release', () => { wakeLock = null; }); } } catch {}
-}
-function releaseAwake(){ try { wakeLock && wakeLock.release(); } catch {} wakeLock = null; }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
-
-/* ---------- Spielstart ---------- */
-async function startGame(){
-  const ids = validSelection();
-  if (!ids.length) { toast('Wähle mindestens eine Playlist.'); return; }
-  if (sdkPlayer && sdkPlayer.activateElement) { try { sdkPlayer.activateElement(); } catch {} }
-  show('game'); $('#game').dataset.running = '1'; game.revealed = false; game.card = null; deck = null; setPhase('loading'); keepAwake();
   try {
-    const cards = await buildDeck(ids);
-    if (!cards.length) throw new UserError('In den gewählten Playlists gibt es keine abspielbaren Songs.');
-    deck = { ids, cards, pos:0 }; saveDeck();
-    setPhase('ready');
-    toast(cards.length + ' Songs im Stapel.');
-  } catch (e) { $('#game').dataset.running = ''; if (room.code) pushState(); room.code ? openLobby() : show('settings'); releaseAwake(); handleError(e, startGame); }
+    const want = !$('#mgame').hidden || !$('#pplay').hidden || !$('#lobby').hidden;
+    if ('wakeLock' in navigator && want && document.visibilityState === 'visible' && !wakeLock) {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  } catch {}
 }
-function resumeGame(){
-  deck = store.get('deck', null);
-  if (!deck || !deck.cards || !deck.cards.length) { toast('Kein gespeichertes Spiel gefunden.'); return; }
-  if (sdkPlayer && sdkPlayer.activateElement) { try { sdkPlayer.activateElement(); } catch {} }
-  show('game'); $('#game').dataset.running = '1'; game.revealed = false; game.card = null; setPhase('ready'); keepAwake();
-}
-async function toSettings(){
-  if (game.phase === 'playing') await stopNow();
-  releaseAwake(); openSettings();
-}
-function openSettings(){
-  show('settings');
-  const d = store.get('deck', null);
-  $('#resumeBtn').hidden = !(d && d.cards && d.cards.length);
-  if (!$('#resumeBtn').hidden) $('#resumeBtn').textContent = 'Weiterspielen (Karte ' + Math.min(d.pos, d.cards.length) + ' von ' + d.cards.length + ')';
-  if (!playlists.length) loadPlaylists(); else { renderPlaylists(); renderMixes(); renderSelInfo(); }
-  loadDevices();
-  const code = room.code || store.get('room', null);
-  $('#roomBtn').textContent = code ? 'Spielraum ' + code + ' öffnen' : 'Spielraum öffnen';
-}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') keepAwake(); });
 
 /* ---------- Fehlerbehandlung ---------- */
 function handleError(e, retry){
@@ -1004,14 +1884,14 @@ function renderHost(){
     $('#clientId').value = store.get('clientId', '');
     show('setup');
   } else {
-    loadSdk(); openSettings();
-    if (store.get('room', null)) ensureRoom().catch(() => {});
+    loadSdk(); openHome();
+    if (store.get('room', null)) ensureRoom().then(() => { if (!$('#home').hidden) renderHome(); }).catch(() => {});
   }
 }
 async function startPlayer(code, saved){
   if (saved && saved.name && (!code || saved.code === code)) {
     show('pplay'); $('#pWait').hidden = false; $('#pWait').textContent = 'Verbinde mit Raum ' + saved.code + ' …';
-    $('#pBack').hidden = true; $('#pFront').hidden = true; $('#pStatus').textContent = '';
+    $('#pMini').hidden = true; $('#pCards').hidden = true;
     try {
       await FB.start();
       if (await FB.get('rooms/' + saved.code + '/host') !== null) {
@@ -1029,6 +1909,8 @@ function wire(){
   $('#copyRedirect').onclick = async () => { try { await navigator.clipboard.writeText(redirectUri()); toast('Adresse kopiert.'); } catch { toast('Bitte die Adresse von Hand kopieren.'); } };
   $('#loginBtn').onclick = login;
   $('#logoutBtn').onclick = () => { store.del('token'); render(); };
+  $('#toMusic').onclick = openSettings;
+  $('#settingsBack').onclick = openHome;
   $('#reloadBtn').onclick = loadPlaylists;
   $('#mixSave').onclick = saveMix;
   $('#mixName').onkeydown = e => { if (e.key === 'Enter') saveMix(); };
@@ -1036,21 +1918,27 @@ function wire(){
   s.oninput = () => { store.set('seconds', Number(s.value)); $('#secondsOut').textContent = s.value + ' s'; };
   $('#devReload').onclick = loadDevices;
   $('#devSelect').onchange = e => { const o = e.target.selectedOptions[0]; if (o && o.value) store.set('device', { id:o.value, name:o.textContent.replace(/ \(gerade nicht erreichbar\)$/, '') }); };
-  $('#startBtn').onclick = startGame;
-  $('#resumeBtn').onclick = resumeGame;
-  $('#toSettings').onclick = toSettings;
-  $('#drawBtn').onclick = drawCard;
-  $('#nextBtn').onclick = drawCard;
-  $('#stopBtn').onclick = stopNow;
-  $('#flipBtn').onclick = reveal;
-  $('#againBtn').onclick = playAgain;
-  $('#msgRetry').onclick = () => { $('#msg').hidden = true; if (retryFn) retryFn(); };
-  $('#msgClose').onclick = () => { $('#msg').hidden = true; };
-  $('#roomBtn').onclick = openLobby;
-  $('#toLobby').onclick = openLobby;
-  $('#lobbySettings').onclick = openSettings;
+  $('#goBtn').onclick = goFromHome;
+  $('#resumeBtn').onclick = resumeMatch;
+  $('#colorsBack').onclick = openHome;
+  $('#pickBack').onclick = openColors;
+  $('#newTaskBtn').onclick = openBuilder;
+  $('#buildBack').onclick = () => openPicker(pickColor);
+  $('#bSave').onclick = saveBuilder;
+  document.querySelectorAll('#bKind button').forEach(b => b.onclick = () => { builder.kind = b.dataset.v; syncBuilder(); });
+  document.querySelectorAll('#bJoin button').forEach(b => b.onclick = () => { builder.join = b.dataset.v; syncBuilder(); });
+  ['#bName', '#bP1', '#bP2', '#bT1', '#bT2', '#bTwoK', '#bTT', '#bText'].forEach(id => {
+    $(id).addEventListener('input', () => { $('#bErr').textContent = ''; syncBuilder(); });
+    $(id).addEventListener('change', syncBuilder);
+  });
+  $('#lobbyBack').onclick = () => { if (running()) { show('mgame'); renderMatch(); } else openHome(); };
   $('#lobbyStart').onclick = lobbyStart;
   $('#closeRoom').onclick = closeRoom;
+  $('#toLobby').onclick = openLobby;
+  $('#mMenu').onclick = endMatchToHome;
+  $('#msgRetry').onclick = () => { $('#msg').hidden = true; if (retryFn) retryFn(); };
+  $('#msgClose').onclick = () => { $('#msg').hidden = true; };
+  $('#peekClose').onclick = () => { $('#peek').hidden = true; };
   $('#joinBtn').onclick = joinRoom;
   $('#joinName').onkeydown = e => { if (e.key === 'Enter') joinRoom(); };
   $('#joinCode').oninput = e => { e.target.value = cleanCode(e.target.value); };
