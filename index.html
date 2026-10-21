@@ -161,6 +161,17 @@ textarea.field{min-height:5rem;resize:vertical}
 .cards.three .card .album{display:none}
 .card .artist{font-weight:600;font-size:1rem;margin:0 0 .6rem;overflow-wrap:anywhere}
 .card .album{font-size:.82rem;opacity:.75;margin:0;overflow-wrap:anywhere}
+/* Albumcover in der Karte */
+.card .side{display:flex;align-items:center;gap:.9rem;margin:0 0 .75rem}
+.card .side .year{flex:1;margin:0;font-size:clamp(2.6rem,13vw,3.5rem)}
+.card .cov{display:block;flex:none;width:min(34vw,132px);height:auto;aspect-ratio:1;border-radius:4px;background:rgba(26,8,32,.12);box-shadow:0 4px 12px rgba(0,0,0,.22)}
+.card .splink{display:inline-block;margin-top:.6rem;font-size:.78rem;font-weight:700;color:inherit;opacity:.8;text-underline-offset:2px}
+.cards.two .card .side,.cards.three .card .side{flex-direction:column;gap:.55rem;margin-bottom:.5rem}
+.cards.two .card .side .year{font-size:clamp(2.2rem,11vw,3rem)}
+.cards.two .card .cov{width:min(28vw,104px)}
+.cards.three .card .side .year{font-size:clamp(1.6rem,7.6vw,2.1rem)}
+.cards.three .card .cov{width:min(20vw,76px)}
+.cards.three .card .splink{font-size:.68rem}
 .actions{display:grid;gap:.6rem;margin-top:1rem}
 
 /* Banner, Liste, Ergebnisse */
@@ -1003,19 +1014,30 @@ const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u030
 const cleanTitle = s => String(s || '').replace(/\s[-–]\s.*$/, '').replace(/[(\[].*?[)\]]/g, '');
 const rnd = n => crypto.getRandomValues(new Uint32Array(1))[0] % n;
 function shuffle(a){ for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+// Albumcover: die Größe, die am nächsten an 300 Pixeln liegt (Spotify liefert meist 640, 300 und 64)
+const IMG_BASE = 'https://i.scdn.co/image/';
+function pickImage(imgs){
+  const list = (imgs || []).filter(i => i && i.url);
+  if (!list.length) return '';
+  const best = list.reduce((a, b) => Math.abs((b.width || 300) - 300) < Math.abs((a.width || 300) - 300) ? b : a);
+  return best.url.startsWith(IMG_BASE) ? best.url.slice(IMG_BASE.length) : best.url;
+}
+const imgUrl = c => !c || !c.img ? '' : /^https:\/\//.test(c.img) ? c.img : IMG_BASE + c.img;
 function toCard(t){
   const al = t.album || {};
   return { uri:t.uri, title:t.name, artist:(t.artists || []).map(a => a.name).join(', '),
-           album:al.name || '', year:(al.release_date || '').slice(0, 4) || '?', duration:t.duration_ms || 0 };
+           album:al.name || '', year:(al.release_date || '').slice(0, 4) || '?', duration:t.duration_ms || 0, img:pickImage(al.images) };
 }
 /* Zwischenspeicher: jede Playlist wird nur einmal komplett eingelesen.
    Ändert sich die Playlist bei Spotify, werden nur die neu angehängten Songs nachgeladen. */
 const songKey = (title, artist) => norm(cleanTitle(title)) + '|' + norm(String(artist || '').split(', ')[0]);
 const pcVersion = p => p.snapshot_id || ('n' + plTotal(p));
-const packCard = c => [c.uri.replace('spotify:track:', ''), c.title, c.artist, c.album, c.year, c.duration];
-const unpackCard = a => ({ uri:'spotify:track:' + a[0], title:a[1], artist:a[2], album:a[3], year:a[4], duration:a[5], k:songKey(a[1], a[2]) });
+const packCard = c => [c.uri.replace('spotify:track:', ''), c.title, c.artist, c.album, c.year, c.duration, c.img || ''];
+const unpackCard = a => ({ uri:'spotify:track:' + a[0], title:a[1], artist:a[2], album:a[3], year:a[4], duration:a[5], img:a[6] || '', k:songKey(a[1], a[2]) });
+// Zwischenspeicher-Format 2 enthält die Cover. Ältere Speicherstände werden einmal neu eingelesen.
+const PC_FORMAT = 2;
 function cacheGet(id){ return store.get('pc.' + id, null); }
-function cacheFresh(p){ const c = cacheGet(p.id); return !!(c && c.v === pcVersion(p)); }
+function cacheFresh(p){ const c = cacheGet(p.id); return !!(c && c.f === PC_FORMAT && c.v === pcVersion(p)); }
 function cachePut(id, obj){
   if (store.set('pc.' + id, obj)) return;
   // Speicher voll: alte Playlists rauswerfen, die gerade nicht gewählt sind
@@ -1036,9 +1058,9 @@ function playlistCards(id, onProgress){
 async function readPlaylist(id, onProgress){
   const p = playlists.find(x => x.id === id), name = p ? '„' + p.name + '“' : 'Playlist';
   const c = cacheGet(id);
-  if (c && p && c.v === pcVersion(p)) return c.cards.map(unpackCard);
+  if (c && p && c.f === PC_FORMAT && c.v === pcVersion(p)) return c.cards.map(unpackCard);
   let cards = [], raw = 0;
-  if (c && p && plTotal(p) > c.raw) { cards = c.cards.map(unpackCard); raw = c.raw; }
+  if (c && p && c.f === PC_FORMAT && plTotal(p) > c.raw) { cards = c.cards.map(unpackCard); raw = c.raw; }
   const isNew = raw > 0;
   let next = '/playlists/' + id + '/items?limit=50&offset=' + raw + '&market=from_token';
   while (next) {
@@ -1053,7 +1075,7 @@ async function readPlaylist(id, onProgress){
     }
     next = page && page.next;
   }
-  if (p) cachePut(id, { v:pcVersion(p), raw, cards:cards.map(packCard) });
+  if (p) cachePut(id, { f:PC_FORMAT, v:pcVersion(p), raw, cards:cards.map(packCard) });
   return cards;
 }
 let warming = false;
@@ -2287,7 +2309,7 @@ function pushState(){
     legend:{ normal:M.colors.normal.map(t => t.name), adv:M.colors.adv.map(t => t.name) }, songIdx:M.songIdx || 0, songs:M.cards.length,
     timer:t ? { kind:t.kind, total:t.total, end:t.end } : null,
     color:M.color, tasks:M.tasks || null, hist:M.hist || [],
-    cards:open && M.cards.length ? M.cards.map(c => ({ title:c.title, artist:c.artist, year:c.year, album:c.album })) : null,
+    cards:open && M.cards.length ? M.cards.map(c => ({ title:c.title, artist:c.artist, year:c.year, album:c.album, img:c.img || '', uri:c.uri || '' })) : null,
     newCard:open ? M.newCard : null, winners:M.winners, pl,
     n:M.deck.pos, total:M.deck.cards.length
   };
@@ -2296,10 +2318,16 @@ function pushState(){
 
 /* Anzeige am Haupthandy */
 const yearColor = y => 'hsl(' + (isNaN(y) ? 300 : Math.min(315, Math.max(25, 25 + (y - 1950) / 76 * 290))).toFixed(0) + ' 85% 70%)';
+/* Aufgedeckte Karte. Mit Cover: Cover links, Jahr daneben (bei 2 oder 3 Karten übereinander).
+   Nach Spotifys Vorgaben wird das Cover nicht beschnitten und nichts darauf gelegt, daneben steht der Link zu Spotify. */
 function cardHtml(c, label){
-  return '<article class="card" style="background:' + yearColor(parseInt(c.year, 10)) + '">' + (label ? '<p class="no">' + esc(label) + '</p>' : '') +
-    '<p class="year">' + esc(c.year) + '</p><p class="title">' + esc(c.title) + '</p><p class="artist">' + esc(c.artist) + '</p>' +
-    (c.album ? '<p class="album">Album: ' + esc(c.album) + '</p>' : '') + '</article>';
+  const src = imgUrl(c), id = String(c.uri || '').replace('spotify:track:', '');
+  const year = '<p class="year">' + esc(c.year) + '</p>';
+  return '<article class="card' + (src ? ' hascov' : '') + '" style="background:' + yearColor(parseInt(c.year, 10)) + '">' + (label ? '<p class="no">' + esc(label) + '</p>' : '') +
+    (src ? '<div class="side"><img class="cov" src="' + esc(src) + '" alt="Albumcover" decoding="async" onerror="this.remove()">' + year + '</div>' : year) +
+    '<p class="title">' + esc(c.title) + '</p><p class="artist">' + esc(c.artist) + '</p>' +
+    (c.album ? '<p class="album">Album: ' + esc(c.album) + '</p>' : '') +
+    (src && /^\w+$/.test(id) ? '<a class="splink" href="https://open.spotify.com/track/' + id + '" target="_blank" rel="noopener">Auf Spotify anhören</a>' : '') + '</article>';
 }
 function bannerHtml(colorIdx, title, extra){
   const c = COLORS[colorIdx];
