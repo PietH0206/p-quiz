@@ -162,15 +162,16 @@ textarea.field{min-height:5rem;resize:vertical}
 .card .artist{font-weight:600;font-size:1rem;margin:0 0 .6rem;overflow-wrap:anywhere}
 .card .album{font-size:.82rem;opacity:.75;margin:0;overflow-wrap:anywhere}
 /* Albumcover in der Karte */
-.card .side{display:flex;align-items:center;gap:.9rem;margin:0 0 .75rem}
-.card .side .year{flex:1;margin:0;font-size:clamp(2.6rem,13vw,3.5rem)}
-.card .cov{display:block;flex:none;width:min(34vw,132px);height:auto;aspect-ratio:1;border-radius:4px;background:rgba(26,8,32,.12);box-shadow:0 4px 12px rgba(0,0,0,.22)}
+.card.hascov{container-type:inline-size}
+.card .side{display:flex;align-items:center;gap:.8rem;margin:0 0 .75rem}
+.card .side .year{flex:1;min-width:0;margin:0;white-space:nowrap;font-size:clamp(2rem,10vw,3rem);font-size:min(3.4rem,calc((100cqi - min(38cqi,132px) - .8rem) / 3.4))}
+.card .cov{display:block;flex:none;width:min(28vw,124px);width:min(38cqi,132px);height:auto;aspect-ratio:1;border-radius:4px;background:rgba(26,8,32,.12);box-shadow:0 4px 12px rgba(0,0,0,.22)}
 .card .splink{display:inline-block;margin-top:.6rem;font-size:.78rem;font-weight:700;color:inherit;opacity:.8;text-underline-offset:2px}
 .cards.two .card .side,.cards.three .card .side{flex-direction:column;gap:.55rem;margin-bottom:.5rem}
-.cards.two .card .side .year{font-size:clamp(2.2rem,11vw,3rem)}
-.cards.two .card .cov{width:min(28vw,104px)}
-.cards.three .card .side .year{font-size:clamp(1.6rem,7.6vw,2.1rem)}
-.cards.three .card .cov{width:min(20vw,76px)}
+.cards.two .card .side .year{font-size:clamp(2.2rem,11vw,3rem);font-size:min(3rem,calc(100cqi / 3.4))}
+.cards.two .card .cov{width:min(28vw,104px);width:min(78cqi,104px)}
+.cards.three .card .side .year{font-size:clamp(1.6rem,7.6vw,2.1rem);font-size:min(2.1rem,calc(100cqi / 3.4))}
+.cards.three .card .cov{width:min(20vw,76px);width:min(86cqi,76px)}
 .cards.three .card .splink{font-size:.68rem}
 .actions{display:grid;gap:.6rem;margin-top:1rem}
 
@@ -433,7 +434,7 @@ textarea.field{min-height:5rem;resize:vertical}
     <button class="btn secondary" id="devTest" type="button" style="margin-top:.7rem">Gerät testen</button>
     <p class="small" id="devInfo" aria-live="polite" style="margin:.6rem 0 0" hidden></p>
     <p class="muted small" style="margin:.6rem 0 0">Fehlt dein Handy oder Lautsprecher? Öffne dort Spotify, spiel kurz etwas an und tippe auf Suchen.</p>
-    <p class="muted small" style="margin:.4rem 0 0">Am zuverlässigsten ist die Spotify-App auf einem Handy oder ein Lautsprecher. „Dieser Browser“ spielt direkt auf dem Gerät, auf dem P-Quiz offen ist, und klappt auf dem iPhone oft nicht.</p>
+    <p class="muted small" style="margin:.4rem 0 0">Am zuverlässigsten ist die Spotify-App auf einem Handy oder ein Lautsprecher. Auf dem iPhone kann P-Quiz nicht selbst abspielen: Dort die Spotify-App kurz öffnen, etwas anspielen und hier das Handy wählen.</p>
   </div>
 </section>
 
@@ -838,8 +839,10 @@ window.onSpotifyWebPlaybackSDKReady = () => {
 // Beim Schließen oder Neuladen meldet sich der Browser-Player bei Spotify ab. Sonst sammeln sich alte „Browser“ in der Geräteliste.
 window.addEventListener('pagehide', () => { if (sdkPlayer) { try { sdkPlayer.disconnect(); } catch {} sdkDeviceId = null; } });
 window.addEventListener('pageshow', e => { if (e.persisted && sdkPlayer) { try { sdkPlayer.connect(); } catch {} } });
+// Auf iPhone und iPad spielt der Browser-Player von Spotify keinen Ton. Dort wird er gar nicht erst geladen.
+const sdkPossible = () => !isIOS();
 function loadSdk(){
-  if (document.getElementById('sdk')) return;
+  if (!sdkPossible() || document.getElementById('sdk')) return;
   const s = document.createElement('script'); s.id = 'sdk'; s.src = 'https://sdk.scdn.co/spotify-player.js'; s.async = true;
   document.head.appendChild(s);
 }
@@ -954,18 +957,20 @@ let devShown = [];
 async function loadDevices(){
   const sel = $('#devSelect');
   try {
-    const list = await deviceList(), want = store.get('device', null);
+    const list = await deviceList();
+    if (!sdkPossible() && isSdkDev(store.get('device', null))) store.del('device');
+    const want = store.get('device', null);
     if (!sdkPlayer && !sdkErr) loadSdk();
     devShown = [];
     if (want && !isSdkDev(want) && !list.some(d => sameDev(d, want))) devShown.push({ id:want.id, label:want.name + ' (gerade nicht erreichbar)', dev:want });
     for (const d of list) devShown.push({ id:d.id, label:devLabel(d), dev:{ id:d.id, name:devLabel(d), raw:d.name, type:d.type } });
-    if (!sdkErr || isSdkDev(want)) devShown.push({ id:'__sdk', label:sdkErr ? SDK_LABEL + ' (geht hier nicht)' : sdkDeviceId ? SDK_LABEL : SDK_LABEL + ' (startet noch …)', dev:{ sdk:true, name:SDK_LABEL } });
+    if (sdkPossible() && (!sdkErr || isSdkDev(want))) devShown.push({ id:'__sdk', label:sdkErr ? SDK_LABEL + ' (geht hier nicht)' : sdkDeviceId ? SDK_LABEL : SDK_LABEL + ' (startet noch …)', dev:{ sdk:true, name:SDK_LABEL } });
     sel.innerHTML = '';
     for (const o of devShown) { const op = document.createElement('option'); op.value = o.id; op.textContent = o.label; sel.append(op); }
     const pick = isSdkDev(want) ? devShown.find(o => o.id === '__sdk')
       : want ? devShown.find(o => o.dev && !o.dev.sdk && sameDev(o.dev, want)) || devShown[0]
       : devShown.find(o => o.id === (list.find(d => d.is_active) || list[0] || {}).id) || devShown[0];
-    if (!pick) { sel.innerHTML = '<option value="">Kein Gerät gefunden</option>'; return; }
+    if (!pick) { sel.innerHTML = '<option value="">Kein Gerät gefunden</option>'; renderMusicInfo(); return; }
     sel.value = pick.id;
     if (!pick.label.endsWith('(gerade nicht erreichbar)')) store.set('device', pick.dev);
     renderMusicInfo();
@@ -1124,6 +1129,7 @@ function startPos(dur, secs){
 }
 // Der Browser-Player bekommt bei jedem Öffnen der Seite eine neue Kennung. Gespielt wird immer auf dem aktuellen, nie auf einem alten.
 async function sdkReady(){
+  if (!sdkPossible()) throw new UserError('Auf dem iPhone kann P-Quiz nicht selbst abspielen. Öffne die Spotify-App, spiel kurz etwas an und wähle unter Musik dein Handy als Abspielgerät.');
   if (sdkErr) throw new UserError(sdkErr + ' Wähle unter Musik ein anderes Abspielgerät, am besten die Spotify-App auf einem Handy.');
   loadSdk();
   for (let i = 0; !sdkDeviceId && !sdkErr && i < 32; i++) await sleep(250);
