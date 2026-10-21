@@ -419,7 +419,10 @@ textarea.field{min-height:5rem;resize:vertical}
   <div class="box">
     <div class="boxhead"><h2>Abspielgerät</h2><button class="link" id="devReload">Suchen</button></div>
     <select class="field" id="devSelect"></select>
+    <button class="btn secondary" id="devTest" type="button" style="margin-top:.7rem">Gerät testen</button>
+    <p class="small" id="devInfo" aria-live="polite" style="margin:.6rem 0 0" hidden></p>
     <p class="muted small" style="margin:.6rem 0 0">Fehlt dein Handy oder Lautsprecher? Öffne dort Spotify, spiel kurz etwas an und tippe auf Suchen.</p>
+    <p class="muted small" style="margin:.4rem 0 0">Am zuverlässigsten ist die Spotify-App auf einem Handy oder ein Lautsprecher. „Dieser Browser“ spielt direkt auf dem Gerät, auf dem P-Quiz offen ist, und klappt auf dem iPhone oft nicht.</p>
   </div>
 </section>
 
@@ -807,15 +810,23 @@ async function api(path, opts = {}, attempt = 0){
 }
 
 /* ---------- Web Playback SDK ("Dieser Browser") ---------- */
-let sdkPlayer = null, sdkDeviceId = null;
+let sdkPlayer = null, sdkDeviceId = null, sdkErr = '';
 window.onSpotifyWebPlaybackSDKReady = () => {
   if (!store.get('token', null)) return;
   sdkPlayer = new Spotify.Player({ name:SDK_NAME, volume:0.8,
     getOAuthToken: cb => getToken().then(cb).catch(() => {}) });
-  sdkPlayer.addListener('ready', ({ device_id }) => { sdkDeviceId = device_id; if (!$('#settings').hidden) loadDevices(); });
+  sdkPlayer.addListener('ready', ({ device_id }) => { sdkDeviceId = device_id; sdkErr = ''; if (!$('#settings').hidden) loadDevices(); });
   sdkPlayer.addListener('not_ready', () => { sdkDeviceId = null; });
+  const fail = text => () => { sdkErr = text; sdkDeviceId = null; if (!$('#settings').hidden) loadDevices(); };
+  sdkPlayer.addListener('initialization_error', fail('Dieser Browser kann Spotify nicht direkt abspielen.'));
+  sdkPlayer.addListener('account_error', fail('Spotify verlangt für die Wiedergabe im Browser ein Premium-Konto.'));
+  sdkPlayer.addListener('authentication_error', fail('Der Browser-Player von Spotify hat die Anmeldung abgelehnt.'));
+  sdkPlayer.addListener('autoplay_failed', () => toast('Der Browser hat den Ton blockiert. Tippe auf „Nochmal hören“.'));
   sdkPlayer.connect();
 };
+// Beim Schließen oder Neuladen meldet sich der Browser-Player bei Spotify ab. Sonst sammeln sich alte „Browser“ in der Geräteliste.
+window.addEventListener('pagehide', () => { if (sdkPlayer) { try { sdkPlayer.disconnect(); } catch {} sdkDeviceId = null; } });
+window.addEventListener('pageshow', e => { if (e.persisted && sdkPlayer) { try { sdkPlayer.connect(); } catch {} } });
 function loadSdk(){
   if (document.getElementById('sdk')) return;
   const s = document.createElement('script'); s.id = 'sdk'; s.src = 'https://sdk.scdn.co/spotify-player.js'; s.async = true;
@@ -911,27 +922,75 @@ async function getDevices(){
   const d = await api('/me/player/devices');
   return ((d && d.devices) || []).filter(x => !x.is_restricted && x.id);
 }
-const devLabel = d => (d.id === sdkDeviceId || d.name === SDK_NAME) ? 'Dieser Browser' : d.name + (d.type ? ' (' + d.type + ')' : '');
+const DEV_TYPES = { Smartphone:'Handy', Computer:'Computer', Tablet:'Tablet', Speaker:'Lautsprecher', TV:'Fernseher', AVR:'Receiver', STB:'TV-Box',
+  AudioDongle:'Audio-Adapter', GameConsole:'Spielkonsole', CastVideo:'Chromecast', CastAudio:'Chromecast', Automobile:'Auto' };
+const SDK_LABEL = 'Dieser Browser';
+const isSdkDev = d => !!d && (d.sdk === true || d.name === SDK_NAME || d.name === SDK_LABEL);
+const devLabel = d => d.name + (DEV_TYPES[d.type] ? ' (' + DEV_TYPES[d.type] + ')' : '');
+/* Geräteliste ohne die P-Quiz-Browser-Player (die gibt es als eine Zeile „Dieser Browser“).
+   Meldet Spotify ein Gerät mehrfach mit gleichem Namen, steht es nur einmal da. */
+async function deviceList(){
+  const seen = new Map();
+  for (const d of await getDevices()) {
+    if (d.name === SDK_NAME) continue;
+    const k = d.name + '|' + d.type, had = seen.get(k);
+    if (!had || (d.is_active && !had.is_active)) seen.set(k, d);
+  }
+  return [...seen.values()];
+}
+const sameDev = (d, want) => d.id === want.id || (d.name === (want.raw || want.name) && (!want.type || d.type === want.type));
+let devShown = [];
 async function loadDevices(){
   const sel = $('#devSelect');
   try {
-    const list = await getDevices();
-    if (sdkDeviceId && !list.some(d => d.id === sdkDeviceId)) list.push({ id:sdkDeviceId, name:SDK_NAME });
-    const want = store.get('device', null);
+    const list = await deviceList(), want = store.get('device', null);
+    if (!sdkPlayer && !sdkErr) loadSdk();
+    devShown = [];
+    if (want && !isSdkDev(want) && !list.some(d => sameDev(d, want))) devShown.push({ id:want.id, label:want.name + ' (gerade nicht erreichbar)', dev:want });
+    for (const d of list) devShown.push({ id:d.id, label:devLabel(d), dev:{ id:d.id, name:devLabel(d), raw:d.name, type:d.type } });
+    if (!sdkErr || isSdkDev(want)) devShown.push({ id:'__sdk', label:sdkErr ? SDK_LABEL + ' (geht hier nicht)' : sdkDeviceId ? SDK_LABEL : SDK_LABEL + ' (startet noch …)', dev:{ sdk:true, name:SDK_LABEL } });
     sel.innerHTML = '';
-    if (want && !list.some(d => d.id === want.id)) list.unshift({ id:want.id, name:want.name, missing:true });
-    if (!list.length) { sel.innerHTML = '<option value="">Kein Gerät gefunden</option>'; return; }
-    for (const d of list) {
-      const o = document.createElement('option'); o.value = d.id;
-      o.textContent = d.missing ? d.name + ' (gerade nicht erreichbar)' : devLabel(d);
-      sel.append(o);
-    }
-    const pick = (want && want.id) || (list.find(d => d.is_active) || list[0]).id;
-    sel.value = pick;
-    const chosen = list.find(d => d.id === pick);
-    store.set('device', { id:pick, name:chosen.missing ? chosen.name : devLabel(chosen) });
+    for (const o of devShown) { const op = document.createElement('option'); op.value = o.id; op.textContent = o.label; sel.append(op); }
+    const pick = isSdkDev(want) ? devShown.find(o => o.id === '__sdk')
+      : want ? devShown.find(o => o.dev && !o.dev.sdk && sameDev(o.dev, want)) || devShown[0]
+      : devShown.find(o => o.id === (list.find(d => d.is_active) || list[0] || {}).id) || devShown[0];
+    if (!pick) { sel.innerHTML = '<option value="">Kein Gerät gefunden</option>'; return; }
+    sel.value = pick.id;
+    if (!pick.label.endsWith('(gerade nicht erreichbar)')) store.set('device', pick.dev);
     renderMusicInfo();
   } catch (e) { handleError(e, loadDevices); }
+}
+function pickDevice(id){
+  const o = devShown.find(x => x.id === id);
+  if (o && !o.label.endsWith('(gerade nicht erreichbar)')) { store.set('device', o.dev); renderMusicInfo(); }
+  $('#devInfo').hidden = true;
+}
+/* Gerät testen: ein paar Sekunden eines Songs aus den gewählten Playlists, dann fragen, ob Spotify wirklich spielt */
+async function testDevice(){
+  const info = $('#devInfo'), say = (t, bad) => { info.hidden = false; info.textContent = t; info.className = 'small' + (bad ? ' bad' : ''); };
+  if (running() && M.round) { toast('Während eines laufenden Spiels geht der Test nicht.'); return; }
+  activateSdk();
+  const ids = validSelection();
+  if (!ids.length) { say('Wähle oben zuerst eine Playlist. Aus ihr kommt der Testsong.', true); return; }
+  say('Testsong wird gestartet …');
+  try {
+    const cards = await playlistCards(ids[rnd(ids.length)]);
+    if (!cards.length) { say('In dieser Playlist gibt es keinen abspielbaren Song.', true); return; }
+    const c = cards[rnd(cards.length)];
+    const res = await playClip(c, () => {}, { pos:startPos(c.duration, 8), left:8000 });
+    if (!res) return;
+    await sleep(3000);
+    if (res.tok !== clip.token) return;
+    const st = await api('/me/player');
+    if (st && st.item && st.is_playing !== false) {
+      const where = st.device ? (st.device.name === SDK_NAME ? 'diesem Browser' : '„' + st.device.name + '“') : 'dem Gerät';
+      say('Spotify spielt gerade „' + st.item.name + '“ auf ' + where + '. Hörst du nichts, dreh dort die Lautstärke hoch.');
+    } else say('Spotify meldet, dass nichts läuft. Öffne Spotify auf dem Gerät, spiel kurz etwas an, tippe auf Suchen und teste nochmal. Oder wähle ein anderes Gerät.', true);
+  } catch (e) {
+    if (e instanceof SkipError) say('Dieser Song ließ sich nicht abspielen. Teste nochmal.', true);
+    else if (e instanceof UserError) say(e.message, true);
+    else { info.hidden = true; handleError(e, testDevice); }
+  }
 }
 function openSettings(){
   show('settings');
@@ -1041,15 +1100,25 @@ function startPos(dur, secs){
   if (hi < lo) { lo = hi = Math.max(0, Math.min(0.15 * dur, dur - L)); }
   return Math.round(lo + Math.random() * (hi - lo));
 }
+// Der Browser-Player bekommt bei jedem Öffnen der Seite eine neue Kennung. Gespielt wird immer auf dem aktuellen, nie auf einem alten.
+async function sdkReady(){
+  if (sdkErr) throw new UserError(sdkErr + ' Wähle unter Musik ein anderes Abspielgerät, am besten die Spotify-App auf einem Handy.');
+  loadSdk();
+  for (let i = 0; !sdkDeviceId && !sdkErr && i < 32; i++) await sleep(250);
+  if (sdkErr) return sdkReady();
+  if (!sdkDeviceId) throw new UserError('Der Browser-Player von Spotify ist noch nicht bereit. Versuch es gleich nochmal, oder wähle unter Musik die Spotify-App auf einem Handy.');
+  return sdkDeviceId;
+}
 async function resolveDevice(){
   const want = store.get('device', null);
-  const list = await getDevices();
-  if (sdkDeviceId && !list.some(d => d.id === sdkDeviceId)) list.push({ id:sdkDeviceId, name:SDK_NAME });
-  const d = (want && list.find(x => x.id === want.id)) || (!want && (list.find(x => x.is_active) || (list.length === 1 && list[0])));
+  if (isSdkDev(want)) return { id:await sdkReady(), name:SDK_LABEL };
+  const raw = await getDevices(), list = raw.filter(x => x.name !== SDK_NAME);
+  const d = want ? (raw.find(x => x.id === want.id) || list.find(x => sameDev(x, want) && x.is_active) || list.find(x => sameDev(x, want)))
+                 : (list.find(x => x.is_active) || (list.length === 1 && list[0]));
   if (!d) throw new UserError(want
     ? 'Das Abspielgerät „' + want.name + '“ ist gerade nicht erreichbar. Öffne dort Spotify, spiel kurz etwas an und versuch es nochmal, oder wähle unter Musik ein anderes Gerät.'
     : 'Kein Abspielgerät gewählt. Öffne Spotify auf dem Handy oder Lautsprecher und wähle es unter Musik aus.');
-  return d.id;
+  return { id:d.id, name:d.name };
 }
 const isSkippable = e => e instanceof ApiError && (e.status === 400 || (e.status === 403 && e.reason !== 'PREMIUM_REQUIRED'));
 const clip = { token:0, timer:null, on:false };
@@ -1060,22 +1129,31 @@ async function playClip(card, onEnd, resume){
   const dev = await resolveDevice();
   const pos = resume ? resume.pos : (card.start || 0);
   try {
-    await api('/me/player/play?device_id=' + encodeURIComponent(dev), { method:'PUT', body:JSON.stringify({ uris:[card.uri], position_ms:pos }) });
+    await api('/me/player/play?device_id=' + encodeURIComponent(dev.id), { method:'PUT', body:JSON.stringify({ uris:[card.uri], position_ms:pos }) });
   } catch (e) { if (isSkippable(e)) throw new SkipError(); throw e; }
   if (tok !== clip.token) return null;
   const dur = resume ? Math.max(0, resume.left) : seconds() * 1000;
-  Object.assign(clip, { on:true, card, onEnd, pos0:pos, t0:Date.now(), end:Date.now() + dur });
+  Object.assign(clip, { on:true, card, onEnd, dev, pos0:pos, t0:Date.now(), end:Date.now() + dur });
   clip.timer = setTimeout(() => { if (tok === clip.token) { clip.token++; clip.on = false; pauseMusic(); onEnd(); } }, dur);
   return { tok, dur };
 }
-async function clipRunsFine(card, tok){
+/* Nach 3 Sekunden bei Spotify nachfragen, ob der Song wirklich läuft.
+   'ok' = läuft, 'track' = dieser Song spielt nicht (nächsten nehmen), 'device' = auf dem Gerät läuft gar nichts */
+async function clipCheck(card, tok){
   await sleep(3000);
-  if (tok !== clip.token) return true;
+  if (tok !== clip.token) return 'ok';
   let st = null;
-  try { st = await api('/me/player'); } catch (e) { if (e instanceof AuthError) throw e; return true; }
-  if (tok !== clip.token) return true;
-  return !!(st && st.item && (st.item.uri === card.uri || st.item.name === card.title) && st.is_playing !== false);
+  try { st = await api('/me/player'); } catch (e) { if (e instanceof AuthError) throw e; return 'ok'; }
+  if (tok !== clip.token) return 'ok';
+  if (!st) return 'device';
+  const dev = clip.dev;
+  if (st.device && dev && st.device.id !== dev.id && st.device.name !== dev.name && !(dev.name === SDK_LABEL && st.device.name === SDK_NAME)) return 'device';
+  return st.item && (st.item.uri === card.uri || st.item.name === card.title) && st.is_playing !== false ? 'ok' : 'track';
 }
+const silentText = () => {
+  const d = store.get('device', null), n = isSdkDev(d) ? 'diesem Browser' : d ? '„' + d.name + '“' : 'dem Abspielgerät';
+  return 'Spotify meldet, dass auf ' + n + ' nichts läuft. Öffne dort Spotify, spiel kurz etwas an und versuch es nochmal. Unter Musik kannst du mit „Gerät testen“ prüfen, ob der Ton ankommt, oder ein anderes Gerät wählen.';
+};
 function stopClip(){ clip.token++; clearTimeout(clip.timer); pauseMusic(); clip.on = false; }
 
 /* ---------- Aufgaben ---------- */
@@ -1879,6 +1957,7 @@ function tick(){
 }
 
 async function drawRound(){
+  activateSdk();
   if (!M || M.phase === 'over' || M.phase === 'loading' || M.phase === 'playing') return;
   if (M.mode === 'turns' && !M.turn) { toast('Es ist niemand verbunden.'); return; }
   stopClip();
@@ -1901,6 +1980,7 @@ async function drawRound(){
   try { await startSong(0); }
   catch (e) { M.phase = 'ready'; M.round--; renderMatch(); pushState(); handleError(e, drawRound); }
 }
+let badRun = 0;
 async function startSong(i){
   for (let tries = 0; tries < 4; tries++) {
     const c = M.cards[i];
@@ -1915,8 +1995,14 @@ async function startSong(i){
     M.songIdx = i + 1; M.phase = 'playing'; M.msg = '';
     setTimer('song', res.dur / 1000);
     saveMatch(); pushState(); renderMatch();
-    clipRunsFine(c, res.tok).then(ok => {
-      if (ok || res.tok !== clip.token || !M || M.phase !== 'playing') return;
+    clipCheck(c, res.tok).then(r => {
+      if (r === 'ok') { if (res.tok === clip.token) badRun = 0; return; }
+      if (res.tok !== clip.token || !M || M.phase !== 'playing') return;
+      // Läuft gar nichts oder dreimal hintereinander nicht, liegt es am Gerät: anhalten und Bescheid sagen, statt still Karten zu verbrauchen
+      if (r === 'device' || ++badRun >= 3) {
+        badRun = 0; stopClip(); M.timer = null; M.phase = 'ready'; M.round--; renderMatch(); pushState();
+        showMsg(silentText(), drawRound); return;
+      }
       clip.token++; clearTimeout(clip.timer);
       dropCard(c); const nc = takeCard(drawKey()); if (!nc) return;
       M.cards[i] = nc; M.phase = 'loading'; M.msg = 'Nächster Versuch …'; renderMatch();
@@ -1966,6 +2052,7 @@ function pauseGame(){
   saveMatch(); pushState(); renderMatch();
 }
 async function resumeGame(){
+  activateSdk();
   if (!M || !M.paused) return;
   const p = M.paused, mus = pausedMusic;
   if (mus && mus.left > 300) {
@@ -2048,6 +2135,7 @@ function nextRound(){
   M.phase = 'ready'; drawRound();
 }
 async function replay(){
+  activateSdk();
   if (!M || !M.cards.length) return;
   const i = Math.max(0, (M.songIdx || 1) - 1);
   try {
@@ -2917,7 +3005,8 @@ function wire(){
   const s = $('#seconds'); s.value = seconds(); $('#secondsOut').textContent = seconds() + ' s';
   s.oninput = () => { store.set('seconds', Number(s.value)); $('#secondsOut').textContent = s.value + ' s'; };
   $('#devReload').onclick = loadDevices;
-  $('#devSelect').onchange = e => { const o = e.target.selectedOptions[0]; if (o && o.value) store.set('device', { id:o.value, name:o.textContent.replace(/ \(gerade nicht erreichbar\)$/, '') }); };
+  $('#devSelect').onchange = e => pickDevice(e.target.value);
+  $('#devTest').onclick = testDevice;
   $('#goBtn').onclick = goFromHome;
   $('#showRoomBtn').onclick = openLobby;
   $('#resumeBtn').onclick = resumeMatch;
