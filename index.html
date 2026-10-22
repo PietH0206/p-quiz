@@ -16,13 +16,13 @@
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js" defer></script>
 <style>
 :root{
-  --bg:#1E0C27;--surface:#2C1538;--text:#F8EEFB;--muted:#BBA3C4;--line:#4A2B58;
+  --bg:#1E0C27;--surface:#33193F;--field:#3E2250;--text:#F8EEFB;--muted:#BBA3C4;--line:#583468;
   --accent:#FF4F97;--on-accent:#1A0820;--card-text:#1A0820;--ok:#4ED18A;--bad:#FF8A8A;
   --head:"Unbounded",system-ui,sans-serif;--body:"Figtree",system-ui,-apple-system,sans-serif;
   color-scheme:dark;
 }
 @media (prefers-color-scheme:light){
-  :root{--bg:#F7EEF6;--surface:#FFFFFF;--text:#2A1033;--muted:#6B5573;--line:#E1CFE0;--accent:#D81B66;--ok:#1E8A55;--bad:#C0304A;color-scheme:light}
+  :root{--bg:#F7EEF6;--surface:#FFFFFF;--field:#FBF6FB;--text:#2A1033;--muted:#6B5573;--line:#E1CFE0;--accent:#D81B66;--ok:#1E8A55;--bad:#C0304A;color-scheme:light}
 }
 *,*::before,*::after{box-sizing:border-box}
 html,body{margin:0;min-height:100%;background:var(--bg)}
@@ -45,7 +45,7 @@ button{cursor:pointer;touch-action:manipulation}
 .btn.secondary{background:transparent;box-shadow:inset 0 0 0 2px var(--line)}
 .btn:disabled{opacity:.55;cursor:default}
 .link{background:none;border:0;padding:.4rem 0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;font-size:.95rem}
-.field{width:100%;padding:.8rem .9rem;border-radius:12px;border:2px solid var(--line);background:var(--surface)}
+.field{width:100%;padding:.8rem .9rem;border-radius:12px;border:2px solid var(--line);background:var(--field)}
 textarea.field{min-height:5rem;resize:vertical}
 .box{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:1rem;margin-top:1rem}
 .boxhead{display:flex;justify-content:space-between;align-items:center;gap:.75rem;margin-bottom:.6rem}
@@ -166,18 +166,16 @@ textarea.field{min-height:5rem;resize:vertical}
 .card .side{display:flex;align-items:center;gap:.8rem;margin:0 0 .75rem}
 .card .side .year{flex:1;min-width:0;margin:0;white-space:nowrap;font-size:clamp(2rem,10vw,3rem);font-size:min(3.4rem,calc((100cqi - min(38cqi,132px) - .8rem) / 3.4))}
 .card .cov{display:block;flex:none;width:min(28vw,124px);width:min(38cqi,132px);height:auto;aspect-ratio:1;border-radius:4px;background:rgba(26,8,32,.12);box-shadow:0 4px 12px rgba(0,0,0,.22)}
-.card .splink{display:inline-block;margin-top:.6rem;font-size:.78rem;font-weight:700;color:inherit;opacity:.8;text-underline-offset:2px}
 .cards.two .card .side,.cards.three .card .side{flex-direction:column;gap:.55rem;margin-bottom:.5rem}
 .cards.two .card .side .year{font-size:clamp(2.2rem,11vw,3rem);font-size:min(3rem,calc(100cqi / 3.4))}
 .cards.two .card .cov{width:min(28vw,104px);width:min(78cqi,104px)}
 .cards.three .card .side .year{font-size:clamp(1.6rem,7.6vw,2.1rem);font-size:min(2.1rem,calc(100cqi / 3.4))}
 .cards.three .card .cov{width:min(20vw,76px);width:min(86cqi,76px)}
-.cards.three .card .splink{font-size:.68rem}
 .actions{display:grid;gap:.6rem;margin-top:1rem}
 
 /* Banner, Liste, Ergebnisse */
 .banner{border-radius:18px;padding:.8rem 1rem;text-align:center;margin:.3rem 0}
-.banner .bc{font-family:var(--head);font-weight:800;font-size:1.3rem}
+.banner .bc{font-family:var(--head);font-weight:800;font-size:1.2rem;line-height:1.2;overflow-wrap:anywhere}
 .banner .bt{font-weight:700}
 .banner.plain{background:var(--surface);border:1px solid var(--line)}
 .banner.plain .bc{font-size:1.1rem}
@@ -235,7 +233,7 @@ textarea.field{min-height:5rem;resize:vertical}
 .seg.kinds button.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);color:var(--text)}
 .bpart{display:flex;gap:.5rem;align-items:center}
 .bpart select.field{flex:1;min-width:0;appearance:none;-webkit-appearance:none;padding-right:2.2rem;
-  background:var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23A890B2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right .9rem center/.75rem auto}
+  background:var(--field) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%23A890B2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right .9rem center/.75rem auto}
 .bpart select.tolsel{flex:none;width:6.2rem}
 .bpart .bwhat{flex:1;font-weight:600}
 .bpart .x{border:0;background:none;color:var(--muted);font-size:1.5rem;line-height:1;padding:.3rem .4rem}
@@ -351,6 +349,9 @@ ol.steps li{margin:.25rem 0}
 .autobar span{position:relative}
 .fixlink{display:block;margin:.4rem auto 0}
 .almost{font-weight:600;font-size:.92rem;margin-top:.25rem}
+.notes label{display:block;font-weight:700;margin-bottom:.4rem}
+.notes textarea{min-height:4.2rem}
+.notes p{margin:.35rem 0 0}
 
 /* Navigationsknöpfe (Zurück, Fertig, Suchen …) */
 .nav{display:inline-flex;align-items:center;justify-content:center;gap:.38rem;flex:none;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:999px;
@@ -523,7 +524,7 @@ ol.steps li{margin:.25rem 0}
     </div>
     <button class="btn secondary" id="devTest" type="button" style="margin-top:.7rem">Gerät testen</button>
     <p class="muted small" id="devSeen" style="margin:.7rem 0 0" hidden></p>
-    <div class="row2 col" style="margin-top:.8rem"><span><b>Nach der Hörzeit</b></span><div class="seg" id="afterSeg"><button type="button" data-v="silence">Stille</button><button type="button" data-v="run">Weiterlaufen</button><button type="button" data-v="pause">Pausieren</button></div></div>
+    <div class="row2 col" style="margin-top:.8rem"><span><b>Nach der Hörzeit</b></span><div class="seg" id="afterSeg"><button type="button" data-v="silence">Stille</button><button type="button" data-v="pause">Pausieren</button></div></div>
     <p class="muted small" id="afterHint" style="margin:.3rem 0 0"></p>
     <p class="muted small" style="margin:.6rem 0 0">Mit „Stille“ bleibt Spotify auf dem iPhone während des ganzen Spiels wach, auch unterwegs. Der Ton kommt über das Handy oder über verbundene Kopfhörer und Bluetooth-Boxen. „Everywhere“ ist die Alexa-Gruppe aller Echos.</p>
   </div>
@@ -644,9 +645,9 @@ ol.steps li{margin:.25rem 0}
   <p class="muted">Tritt dem Spiel bei. Den Raumcode zeigt das Haupthandy.</p>
   <div class="box stack">
     <label for="joinCode"><strong>Raumcode</strong></label>
-    <input class="field codefield" id="joinCode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="K7QX">
+    <input class="field codefield" id="joinCode" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false">
     <label for="joinName"><strong>Dein Name</strong></label>
-    <input class="field" id="joinName" maxlength="20" autocomplete="nickname" placeholder="Lena">
+    <input class="field" id="joinName" maxlength="20" autocomplete="off" autocapitalize="words">
     <p class="err" id="joinErr" aria-live="polite"></p>
     <button class="btn primary" id="joinBtn">Beitreten</button>
   </div>
@@ -1374,17 +1375,18 @@ async function buildDeck(ids, onProgress){
 
 /* ---------- Abspielen ---------- */
 const seconds = () => Math.min(60, Math.max(1, Number(store.get('seconds', 20)) || 20));
+// Laufen in einer Runde 2 oder 3 Songs (Bingo), spielt jeder höchstens 10 Sekunden. Ist die Hörzeit kürzer, gilt die Hörzeit.
+const MULTI_MAX = 10, SONG_GAP = 2;
+const clipSecs = () => M && M.cards && M.cards.length > 1 ? Math.min(MULTI_MAX, seconds()) : seconds();
 /* Nach der Hörzeit:
    'silence' = Spotify spielt einen stillen Track weiter. Man hört nichts, aber die Spotify-App auf dem iPhone bleibt wach.
-   'run'     = der Song läuft weiter, bis die nächste Karte startet.
    'pause'   = Spotify pausiert. Gut für Echo oder Computer. Ein iPhone legt Spotify dann nach wenigen Sekunden schlafen.
    Ohne eigene Wahl: bei Handy und Tablet Stille, sonst Pause. */
-const afterClip = () => { const v = store.get('after', null); return ['silence', 'run', 'pause'].includes(v) ? v : isPhoneDev(store.get('device', null)) ? 'silence' : 'pause'; };
+const afterClip = () => { const v = store.get('after', null); return ['silence', 'pause'].includes(v) ? v : isPhoneDev(store.get('device', null)) ? 'silence' : 'pause'; };
 const keepRun = () => afterClip() === 'run';
 const AFTER_HINT = {
-  silence:'Nach der Hörzeit spielt Spotify einen stillen Track. Man hört nichts, aber Spotify auf dem iPhone bleibt wach und die nächste Karte startet sofort.',
-  run:'Der Song spielt nach der Hörzeit weiter, bis die nächste Karte startet. Auch so bleibt Spotify auf dem iPhone wach.',
-  pause:'Der Song stoppt nach der Hörzeit. Gut für Echo oder Computer. Auf dem iPhone schläft Spotify dann nach wenigen Sekunden ein.'
+  silence:'Für das Handy. Nach der Hörzeit spielt Spotify einen stillen Track. Man hört nichts, aber Spotify auf dem iPhone bleibt wach und die nächste Karte startet sofort.',
+  pause:'Für Computer oder Echo. Der Song stoppt nach der Hörzeit. Auf dem iPhone schläft Spotify dann nach wenigen Sekunden ein.'
 };
 function renderAfter(){
   const v = afterClip();
@@ -1463,7 +1465,7 @@ async function playClip(card, onEnd, resume){
     throw e;
   }
   if (tok !== clip.token) return null;
-  const dur = resume ? Math.max(0, resume.left) : seconds() * 1000;
+  const dur = resume ? Math.max(0, resume.left) : clipSecs() * 1000;
   Object.assign(clip, { on:true, card, onEnd, dev, pos0:pos, t0:Date.now(), end:Date.now() + dur });
   clip.timer = setTimeout(() => { if (tok === clip.token) { clip.token++; clip.on = false; holdMusic(); onEnd(); } }, dur);
   return { tok, dur };
@@ -2085,7 +2087,7 @@ function syncBuilder(){
   if (!$('#bTwo').hidden) drawBuilderQuestion();
   const t = builderTask(), pv = $('#bPreview'); pv.innerHTML = '';
   const ban = el('div', 'banner'); ban.style.background = COLORS[pickColor].bg; ban.style.color = COLORS[pickColor].fg;
-  ban.append(txt('div', 'bc', COLORS[pickColor].name), txt('div', 'bt', t.name));
+  ban.append(txt('div', 'bc', t.name));
   const fb = el('div'); pv.append(ban, fb);
   if (songsOf(t) > 1) fb.append(Object.assign(txt('p', 'muted small', 'Es laufen ' + songsOf(t) + ' Songs nacheinander, danach wird geantwortet.'), { style:'margin:.6rem 0 0' }));
   const ff = el('div'); ff.style.marginTop = '.7rem'; fb.append(ff);
@@ -2322,7 +2324,7 @@ async function startMatch(){
   } catch (e) { hideIntro(); M = null; store.del('match'); openHome(); handleError(e, startMatch); }
 }
 /* Übersicht vor dem Spielstart: Modus, Ziel, Spieler. Läuft am Haupthandy und auf den Spielerhandys. */
-const INTRO_MS = typeof window.PQ_INTRO_MS === 'number' ? window.PQ_INTRO_MS : 4000;
+const INTRO_MS = typeof window.PQ_INTRO_MS === 'number' ? window.PQ_INTRO_MS : 6000;
 function introData(r){
   const seen = new Set();
   const ppl = r.mode === 'solo' ? [] : playerList(room.players).filter(([, p]) => p.online !== false && !seen.has(nameKey(p.name)) && seen.add(nameKey(p.name)))
@@ -2341,7 +2343,7 @@ function introHtml(d){
   const chips = d.mode === 'solo' ? '<span class="ipp" style="--i:0">Nur du am Haupthandy</span>'
     : ppl.map((p, i) => '<span class="ipp' + (turns && !i ? ' first' : '') + '" style="--i:' + i + '">' + esc(p.n) +
         (turns && !i ? ' <small>fängt an</small>' : p.l ? ' <small>Fortg.</small>' : '') + '</span>').join('');
-  return '<div class="introcard" style="--ms:' + Math.max(400, d.ms || 4000) + 'ms">' +
+  return '<div class="introcard" style="--ms:' + Math.max(400, d.ms || 6000) + 'ms">' +
     '<div class="ivinyl"><div class="glow"></div><div class="record"></div><div class="ilab">P</div></div>' +
     '<div class="ieq" aria-hidden="true">' + '<i></i>'.repeat(7) + '</div>' +
     '<p class="ikick">Gleich geht’s los' + (ppl.length ? ' · ' + ppl.length + (ppl.length === 1 ? ' Spieler' : ' Spieler') : '') + '</p>' +
@@ -2364,6 +2366,7 @@ function resumeMatch(){
   const s = store.get('match', null);
   if (!s) return;
   M = s; M.timer = null; M.paused = null; pausedMusic = null;
+  M.gap = false;
   if (M.phase === 'playing' || M.phase === 'loading') M.phase = M.mode === 'solo' ? 'stopped' : M.mode === 'bingo' ? 'answering' : 'placing';
   if (M.phase === 'answering') setTimer('answer', M.answerSecs);
   if (M.phase === 'placing' && M.mode === 'together') setTimer('place', M.placeSecs);
@@ -2417,6 +2420,7 @@ function tick(){
   if (t.kind === 'place' && M.phase === 'placing') reveal();
   else if (t.kind === 'answer' && M.phase === 'answering') reveal();
   else if (t.kind === 'replay') { M.timer = null; renderMatch(); pushState(); }
+  else if (t.kind === 'gap') nextSongAfterGap();
 }
 
 async function drawRound(){
@@ -2425,7 +2429,7 @@ async function drawRound(){
   if (M.mode === 'turns' && !M.turn) { toast('Es ist niemand verbunden.'); return; }
   stopClip(true);
   clearPause();
-  M.round++; M.revealed = false; M.newCard = null; M.songIdx = 0; M.timer = null; M.lastTurn = null;
+  M.round++; M.revealed = false; M.newCard = null; M.songIdx = 0; M.timer = null; M.lastTurn = null; M.gap = false;
   for (const p of Object.values(M.pl)) {
     Object.assign(p, { placed:null, result:null, almost:false, ans:null, self:null, answered:false, said:'' });
     if (p.lvlNext) { p.lvl = p.lvlNext; delete p.lvlNext; }
@@ -2450,7 +2454,7 @@ async function startSong(i){
     // Originaljahr prüfen, bevor der Song läuft (meist schon im Hintergrund erledigt)
     await Promise.race([verifyYear(c), sleep(1500)]);
     if (!M || M.cards[i] !== c) return;
-    c.start = startPos(c.duration, seconds());
+    c.start = startPos(c.duration, clipSecs());
     let res;
     try { res = await playClip(c, () => songEnded(i)); }
     catch (e) {
@@ -2482,14 +2486,21 @@ async function startSong(i){
 function songEnded(i){
   if (!M || M.phase !== 'playing') { if (M) renderMatch(); return; }
   if (i < M.cards.length - 1) {
-    M.phase = 'loading'; M.msg = 'Song ' + (i + 2) + ' wird gestartet …'; renderMatch(); pushState();
-    startSong(i + 1).catch(e => { afterSongs(); handleError(e); });
+    // Kurze Pause, dann der nächste Song. Die Pause lässt sich mit „❚❚ Pause“ anhalten.
+    M.gap = true; setTimer('gap', SONG_GAP); saveMatch(); pushState(); renderMatch();
     return;
   }
   afterSongs();
 }
+function nextSongAfterGap(){
+  if (!M || !M.gap) return;
+  M.gap = false; M.timer = null;
+  const i = M.songIdx;
+  M.phase = 'loading'; M.msg = 'Song ' + (i + 1) + ' wird gestartet …'; renderMatch(); pushState();
+  startSong(i).catch(e => { afterSongs(); handleError(e); });
+}
 function afterSongs(){
-  M.timer = null;
+  M.timer = null; M.gap = false;
   if (M.mode === 'solo') M.phase = 'stopped';
   else if (M.mode === 'turns') { M.phase = 'placing'; if (M.turnSecs) setTimer('place', M.turnSecs); }
   else if (M.mode === 'together') { M.phase = 'placing'; setTimer('place', M.placeSecs); }
@@ -2501,6 +2512,7 @@ function stopSongEarly(){
   if (!M) return;
   if (M.timer && M.timer.kind === 'replay') { stopClip(); M.timer = null; renderMatch(); pushState(); return; }
   if (M.phase !== 'playing') { stopClip(); renderMatch(); return; }
+  if (M.gap) { nextSongAfterGap(); return; }
   stopClip();
   songEnded(M.songIdx - 1);
 }
@@ -2550,7 +2562,7 @@ function reveal(){
   if (!M || M.revealed) return;
   if (M.phase === 'loading' || (M.phase === 'playing' && M.mode !== 'turns')) stopClip(M.phase === 'playing' && keepRun());
   clearPause();
-  M.timer = null; M.revealed = true; M.phase = 'reveal';
+  M.timer = null; M.gap = false; M.revealed = true; M.phase = 'reveal';
   M.tieBefore = M.tie ? [...M.tie] : null;
   scoreRound(M.mode === 'turns' ? [M.turn] : M.tie ? [...M.tie] : Object.keys(M.pl));
   saveMatch(); pushState(); renderMatch();
@@ -2765,7 +2777,7 @@ function pushState(){
     mode:M.mode, phase:M.phase, round:M.round, target:M.target || 0, win:M.win, check:M.check, auto:!!M.auto, paused:M.paused ? (M.paused.t || { kind:'none', total:1, left:0 }) : null,
     turn:M.turn || null, lastTurn:M.lastTurn || null, order:M.order, tie:M.tie || null, tieWin:!!M.tieWin,
     next:M.mode === 'turns' && M.turn ? nextTurn(M.turn, false) : null,
-    legend:{ normal:M.colors.normal.map(t => t.name), adv:M.colors.adv.map(t => t.name) }, songIdx:M.songIdx || 0, songs:M.cards.length,
+    legend:{ normal:M.colors.normal.map(t => t.name), adv:M.colors.adv.map(t => t.name) }, songIdx:M.songIdx || 0, songs:M.cards.length, gap:!!M.gap,
     timer:t ? { kind:t.kind, total:t.total, end:t.end } : null,
     color:M.color, tasks:M.tasks || null, hist:M.hist || [],
     cards:open && M.cards.length ? M.cards.map(c => ({ title:c.title, artist:c.artist, year:c.year, y0:c.y0 || '', album:c.album, img:c.img || '', uri:c.uri || '' })) : null,
@@ -2776,22 +2788,37 @@ function pushState(){
 }
 
 /* Anzeige am Haupthandy */
-const yearColor = y => 'hsl(' + (isNaN(y) ? 300 : Math.min(315, Math.max(25, 25 + (y - 1950) / 76 * 290))).toFixed(0) + ' 85% 70%)';
+/* Kartenfarben: hängen nicht vom Jahr ab, sonst könnte man aus der Farbe aufs Jahr schließen.
+   Jeder Song bekommt fest eine Farbe aus der Palette, abgeleitet aus Titel und Künstler. Im Zeitstrahl haben zwei Nachbarn nie dieselbe Farbe. */
+const CARD_COLORS = ['#FF9EC4', '#FFB98A', '#FFE27A', '#B6EB8F', '#7FE3C8', '#86CFFF', '#AFA8FF', '#E3AEFF', '#FFA79A'];
+function cardColorIdx(title, artist){
+  const k = norm(title) + '|' + norm(String(artist || '').split(', ')[0]);
+  let h = 2166136261;
+  for (let i = 0; i < k.length; i++) { h ^= k.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return (h >>> 0) % CARD_COLORS.length;
+}
+const cardColor = (title, artist) => CARD_COLORS[cardColorIdx(title, artist)];
+// Farben für einen Zeitstrahl: wie der Song, aber nie gleich wie die Karte davor
+function lineColors(line){
+  let prev = -1;
+  return (line || []).map(c => { let i = cardColorIdx(c.t, c.a); if (i === prev) i = (i + 1) % CARD_COLORS.length; prev = i; return CARD_COLORS[i]; });
+}
 /* Aufgedeckte Karte. Mit Cover: Cover links, Jahr daneben (bei 2 oder 3 Karten übereinander).
    Nach Spotifys Vorgaben wird das Cover nicht beschnitten und nichts darauf gelegt, daneben steht der Link zu Spotify. */
 function cardHtml(c, label){
-  const src = imgUrl(c), id = String(c.uri || '').replace('spotify:track:', '');
+  const src = imgUrl(c);
   const year = '<p class="year">' + esc(c.year) + '</p>';
-  return '<article class="card' + (src ? ' hascov' : '') + '" style="background:' + yearColor(parseInt(c.year, 10)) + '">' + (label ? '<p class="no">' + esc(label) + '</p>' : '') +
+  return '<article class="card' + (src ? ' hascov' : '') + '" style="background:' + cardColor(c.title, c.artist) + '">' + (label ? '<p class="no">' + esc(label) + '</p>' : '') +
     (src ? '<div class="side"><img class="cov" src="' + esc(src) + '" alt="Albumcover" decoding="async" onerror="this.remove()">' + year + '</div>' : year) +
     '<p class="title">' + esc(c.title) + '</p><p class="artist">' + esc(c.artist) + '</p>' +
     (c.album ? '<p class="album">Album: ' + esc(c.album) + (c.y0 ? ' (Ausgabe ' + esc(c.y0) + ')' : '') + '</p>' : '') +
-    (src && /^\w+$/.test(id) ? '<a class="splink" href="https://open.spotify.com/track/' + id + '" target="_blank" rel="noopener">Auf Spotify anhören</a>' : '') + '</article>';
+    '</article>';
 }
 function bannerHtml(colorIdx, title, extra){
   const c = COLORS[colorIdx];
-  return '<div class="banner" style="background:' + c.bg + ';color:' + c.fg + '"><div class="bc">' + esc(c.name) + '</div><div class="bt">' + esc(title) + '</div>' +
-    (extra ? '<div class="bt">' + esc(extra) + '</div>' : '') + '</div>';
+  // Nur die Aufgabe. Die Farbe sieht man am Kasten selbst.
+  return '<div class="banner" style="background:' + c.bg + ';color:' + c.fg + '" aria-label="' + esc(c.name) + '">' +
+    (extra ? '<div class="bt">' + esc(title) + '</div><div class="bt">' + esc(extra) + '</div>' : '<div class="bc">' + esc(title) + '</div>') + '</div>';
 }
 // Die letzten 10 Bingofarben, neueste links und umrandet
 function histHtml(hist){
@@ -2884,7 +2911,7 @@ function renderMatch(){
   $('#mCards').hidden = !cardsVisible;
   $('#mCards').className = 'cards' + (M.cards.length > 2 ? ' three' : M.cards.length > 1 ? ' two' : '');
   if (showCards) setHtml($('#mCards'), M.cards.map((c, i) => cardHtml(c, M.cards.length > 1 ? 'Song ' + (i + 1) : '')).join(''));
-  $('#mRecord').classList.toggle('spin', !M.paused && (M.phase === 'playing' || replaying));
+  $('#mRecord').classList.toggle('spin', !M.paused && ((M.phase === 'playing' && !M.gap) || replaying));
   const pt = M.paused && M.paused.t;
   if (pt && pt.kind !== 'next') {
     $('#mProg').style.strokeDashoffset = String(RING * Math.min(1, 1 - pt.left / pt.total));
@@ -2901,7 +2928,7 @@ function renderMatch(){
   const status = {
     loading:M.msg || 'Einen Moment …',
     ready:M.mode === 'turns' ? name(M.turn) + ' zieht die nächste Karte, am eigenen Handy oder hier.' : 'Bereit für die nächste Runde.',
-    playing:(M.cards.length > 1 ? 'Song ' + M.songIdx + ' von ' + M.cards.length + ' läuft' : M.mode === 'turns' ? name(M.turn) + ' hört und ordnet ein …' : 'Hör genau hin')
+    playing:(M.gap ? 'Gleich kommt Song ' + (M.songIdx + 1) + ' von ' + M.cards.length : M.cards.length > 1 ? 'Song ' + M.songIdx + ' von ' + M.cards.length + ' läuft' : M.mode === 'turns' ? name(M.turn) + ' hört und ordnet ein …' : 'Hör genau hin')
       + (M.mode === 'together' && placedN ? ', ' + placedN + ' von ' + act.length + ' eingeordnet' : '')
       + (M.mode === 'bingo' && answeredN ? ', ' + answeredN + ' von ' + needers.length + ' geantwortet' : ''),
     placing:M.mode === 'turns' ? name(M.turn) + ' ordnet ein …' : placedN + ' von ' + act.length + ' haben eingeordnet',
@@ -2931,12 +2958,12 @@ function renderMatch(){
   const btn = (label, fn, primary) => { const b = txt('button', 'btn ' + (primary ? 'primary' : 'secondary'), label); b.type = 'button'; b.onclick = fn; acts.append(b); };
   const nextLabel = M.mode === 'turns' ? 'Weiter mit ' + name(nextTurn(M.turn, false)) : M.mode === 'bingo' ? 'Nächste Runde' : 'Nächste Karte';
   if (M.paused) {
-    btn('▶ Weiter', resumeGame, true);
+    btn('▶ Play', resumeGame, true);
     if (M.phase === 'reveal') btn(nextLabel, nextRound, false);
   } else {
     if (M.phase === 'ready') btn(M.mode === 'turns' ? 'Karte für ' + name(M.turn) + ' ziehen' : M.round ? 'Nächste Runde' : 'Erste Karte ziehen', drawRound, true);
     if (canPause()) btn('❚❚ Pause', pauseGame, false);
-    if (M.phase === 'playing' || replaying || (M.phase === 'reveal' && clip.on)) btn('Song stoppen', stopSongEarly, false);
+    if (M.phase === 'playing' || replaying || (M.phase === 'reveal' && clip.on)) btn(M.gap ? 'Nächsten Song sofort' : 'Überspringen', stopSongEarly, false);
     if (M.phase === 'placing' || M.phase === 'answering') btn('Jetzt aufdecken', forceReveal, M.mode === 'bingo' && !needers.length);
     if (M.phase === 'stopped') { btn('Karte umdrehen', soloFlip, true); btn('Nochmal hören', replay, false); }
     if (M.phase === 'reveal') {
@@ -2994,13 +3021,13 @@ function renderBoard(){
 }
 
 /* ---------- Spielerhandy ---------- */
-const seat = { code:null, name:'', key:'', unsub:null, presence:null, room:null, tick:null, sel:null, selRound:-1, formKey:'', form:null, selfAns:{}, unveil:false, sentRound:-1 };
+const seat = { code:null, name:'', key:'', unsub:null, presence:null, room:null, tick:null, sel:null, selRound:-1, formKey:'', form:null, selfAns:{}, unveil:false, sentRound:-1, notes:{} };
 
 function openJoin(code){
   show('pjoin');
-  const saved = store.get('join', null);
-  $('#joinCode').value = cleanCode(code || (saved && saved.code) || '');
-  $('#joinName').value = (saved && saved.name) || '';
+  // Beide Felder starten leer. Nur wer über den QR-Code kommt, hat den Raumcode schon drin.
+  $('#joinCode').value = cleanCode(code || '');
+  $('#joinName').value = '';
   $('#joinErr').textContent = '';
   ($('#joinCode').value ? $('#joinName') : $('#joinCode')).focus();
 }
@@ -3117,14 +3144,14 @@ function drawPlayer(r){
   const iAmNext = st.mode === 'turns' && st.next === seat.key && st.turn !== seat.key;
   $('#pSub').hidden = !(iAmNext && ['ready', 'loading', 'playing', 'placing'].includes(st.phase));
   mini.classList.toggle('mine', st.mode === 'turns' && ((myTurn && st.phase !== 'reveal') || (st.phase === 'reveal' && st.next === seat.key)));
-  $('#pRecord').classList.toggle('spin', !st.paused && (st.phase === 'playing' || replaying));
+  $('#pRecord').classList.toggle('spin', !st.paused && ((st.phase === 'playing' && !st.gap) || replaying));
   const placedMe = meP && (meP.placed || seat.sentRound === st.round);
   const watching = !!(st.tie && !st.tie.includes(seat.key));
   const tieNames = st.tie ? st.tie.map(k => k === seat.key ? 'dir' : name(k)) : [];
   $('#pStatus').textContent = st.paused ? 'Pausiert' : replaying ? 'Läuft nochmal' : watching && ['playing', 'placing', 'ready', 'loading'].includes(st.phase) ? 'Stechen zwischen ' + tieNames.join(' und ') + '. Du schaust zu.' : {
     loading:'Gleich geht’s los …',
     ready:st.mode === 'turns' ? (myTurn ? 'Du bist dran. Zieh eine Karte.' : name(st.turn) + ' ist dran.') : 'Gleich kommt die nächste Karte.',
-    playing:st.songs > 1 ? 'Song ' + st.songIdx + ' von ' + st.songs + ' läuft'
+    playing:st.gap ? 'Gleich kommt Song ' + (st.songIdx + 1) + ' von ' + st.songs : st.songs > 1 ? 'Song ' + st.songIdx + ' von ' + st.songs + ' läuft'
       : st.mode === 'turns' ? (myTurn ? 'Hör hin und ordne ein. Sobald du bestätigst, wird aufgedeckt.' : name(st.turn) + ' hört und ordnet ein …')
       : st.mode === 'together' ? (placedMe ? 'Eingeordnet. Aufgedeckt wird, wenn die Zeit um ist.' : 'Hör hin und ordne ein.') : 'Hör genau hin',
     placing:st.mode === 'turns' ? (myTurn ? 'Wo gehört der Song hin?' : name(st.turn) + ' ordnet ein …') : (placedMe ? 'Eingeordnet. Aufgedeckt wird, wenn die Zeit um ist.' : 'Wo gehört der Song hin?'),
@@ -3214,7 +3241,8 @@ function doneHtml(st, keys, kind){
       (done(k) ? '<span class="ok">✓ ' + word + '</span>' : '<span class="muted">überlegt noch</span>') + '</div>').join('') + '</div>';
 }
 function lineHtml(line){
-  return (line || []).map(c => '<div class="tlc" style="background:' + yearColor(c.y) + '"><span class="ty">' + c.y + '</span><span class="tt">' + esc(c.t) + '<br><span>' + esc(c.a) + '</span></span></div>').join('');
+  const cols = lineColors(line);
+  return (line || []).map((c, i) => '<div class="tlc" style="background:' + cols[i] + '"><span class="ty">' + c.y + '</span><span class="tt">' + esc(c.t) + '<br><span>' + esc(c.a) + '</span></span></div>').join('');
 }
 function newRound(st){
   if (seat.selRound !== st.round) Object.assign(seat, { sel:null, selRound:st.round, unveil:false, sentRound:-1 });
@@ -3239,6 +3267,7 @@ function drawTimelineArea(st, meP, myTurn){
   head.append(txt('h2', '', 'Dein Zeitstrahl'), txt('span', 'muted small', line.length + ' von ' + st.target + ' Karten'));
   const tl = el('div', 'tl');
   const isNew = c => st.cards && st.newCard && meP.result === 'right' && c.y === st.newCard.y && c.t === st.newCard.t;
+  const cols = lineColors(line);
   for (let i = 0; i <= line.length; i++) {
     const end = i === 0 || i === line.length;
     const g = el('button', 'gap' + (end ? ' end' : '')); g.type = 'button';
@@ -3250,7 +3279,7 @@ function drawTimelineArea(st, meP, myTurn){
     tl.append(g);
     if (i < line.length) {
       const c = line[i], d = el('div', 'tlc' + (isNew(c) ? ' new' : ''));
-      d.style.background = yearColor(c.y);
+      d.style.background = cols[i];
       d.append(txt('span', 'ty', String(c.y)));
       const tt = txt('span', 'tt', c.t); tt.append(el('br'), txt('span', '', c.a)); d.append(tt);
       tl.append(d);
@@ -3297,7 +3326,17 @@ function drawBingoArea(st, meP, myTask){
     const gridBox = el('div'); gridBox.id = 'pGridBox';
     const fa = el('div', 'actions'); fa.id = 'pFormActs';
     const done = el('div'); done.id = 'pDoneBox';
-    main.append(done, formBox, fa, gridBox);
+    main.append(done, formBox, fa);
+    // Bei 2 oder 3 Songs: Notizen nur für dich, zum Beispiel schon während Song 1. Sie bleiben die ganze Runde stehen.
+    if (st.round && songsOf(myTask) > 1) {
+      const nb = el('div', 'box notes'), lab = txt('label', '', 'Deine Notizen'), ta = el('textarea', 'field');
+      lab.htmlFor = 'pNotes'; ta.id = 'pNotes'; ta.rows = 3; ta.maxLength = 300; ta.spellcheck = false;
+      ta.value = seat.notes[st.round] || '';
+      ta.oninput = () => { seat.notes = { [st.round]:ta.value }; };
+      nb.append(lab, ta, txt('p', 'muted small', 'Nur auf deinem Handy, niemand sonst sieht sie.'));
+      main.append(nb);
+    }
+    main.append(gridBox);
     if (answering) {
       const f = buildAnswerForm(myTask, st.check, body, { songs:st.songs || 1, onChange:() => { const e = $('#pFormErr'); if (e) e.textContent = ''; } });
       if (needsInput(myTask, st.check)) { seat.form = f; const e = el('p', 'err'); e.id = 'pFormErr'; body.append(e); }
