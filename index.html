@@ -523,9 +523,9 @@ ol.steps li{margin:.25rem 0}
     </div>
     <button class="btn secondary" id="devTest" type="button" style="margin-top:.7rem">Gerät testen</button>
     <p class="muted small" id="devSeen" style="margin:.7rem 0 0" hidden></p>
-    <div class="row2 col" style="margin-top:.8rem"><span><b>Nach der Hörzeit</b></span><div class="seg" id="afterSeg"><button type="button" data-v="run">Weiterlaufen</button><button type="button" data-v="pause">Pausieren</button></div></div>
+    <div class="row2 col" style="margin-top:.8rem"><span><b>Nach der Hörzeit</b></span><div class="seg" id="afterSeg"><button type="button" data-v="silence">Stille</button><button type="button" data-v="run">Weiterlaufen</button><button type="button" data-v="pause">Pausieren</button></div></div>
     <p class="muted small" id="afterHint" style="margin:.3rem 0 0"></p>
-    <p class="muted small" style="margin:.6rem 0 0">Am zuverlässigsten ist ein Gerät, das nicht einschläft: Echo, Computer oder ein zweites Handy, auf dem Spotify offen bleibt. Spielst du über das Haupthandy selbst, kommt der Ton auch über verbundene Kopfhörer oder Bluetooth-Boxen.</p>
+    <p class="muted small" style="margin:.6rem 0 0">Mit „Stille“ bleibt Spotify auf dem iPhone während des ganzen Spiels wach, auch unterwegs. Der Ton kommt über das Handy oder über verbundene Kopfhörer und Bluetooth-Boxen. „Everywhere“ ist die Alexa-Gruppe aller Echos.</p>
   </div>
 </section>
 
@@ -1099,7 +1099,7 @@ function phoneHelp(s, name){
   const who = name ? '„' + name + '“' : 'deinem Handy';
   if (speakerActive(s)) return 'Spotify ' + (s.playing ? 'spielt gerade auf' : 'ist gerade auf') + ' „' + s.active.name + '“' + (s.playing ? '' : ' eingestellt') +
     '. Darum schläft Spotify auf ' + who + '. Entweder unter Musik „' + s.active.name + '“ als Abspielgerät wählen, oder auf „Handy verbinden“ tippen, in Spotify über das Geräte-Symbol „Dieses iPhone“ wählen, einen Song starten und zurück zu P-Quiz wechseln.';
-  return 'Spotify auf ' + who + ' schläft gerade. Das iPhone legt Spotify wenige Sekunden nach dem Pausieren schlafen, wenn P-Quiz vorne ist. Tippe auf „Handy verbinden“, starte in Spotify einen Song und wechsle zurück zu P-Quiz, dann geht es von selbst weiter. Damit es nicht wieder passiert: unter Musik „Nach der Hörzeit: Weiterlaufen“ wählen, oder ein Gerät, das nicht einschläft, etwa den Echo.';
+  return 'Spotify auf ' + who + ' schläft gerade. Das iPhone legt Spotify wenige Sekunden nach dem Pausieren schlafen, wenn P-Quiz vorne ist. Tippe auf „Handy verbinden“, starte in Spotify einen Song und wechsle zurück zu P-Quiz, dann geht es von selbst weiter. Damit es nicht wieder passiert: unter Musik „Nach der Hörzeit: Stille“ wählen, oder ein Gerät, das nicht einschläft, etwa den Echo.';
 }
 function seenText(s){
   const list = s.raw.filter(d => d.name !== SDK_NAME);
@@ -1131,7 +1131,7 @@ async function loadDevices(quiet){
     const mine = want && !isSdkDev(want) ? list.find(d => sameDev(d, want)) || list.find(d => d.type === (want.type || 'Smartphone')) : null;
     devShown = [];
     if (want && !isSdkDev(want) && !mine) devShown.push({ id:want.id, label:want.name + ' (schläft gerade)', dev:want, stale:true });
-    for (const d of list) devShown.push({ id:d.id, label:devLabel(d), dev:{ id:d.id, name:devLabel(d), raw:d.name, type:d.type } });
+    for (const d of list) devShown.push({ id:d.id, label:devLabel(d) + (/^everywhere$/i.test(d.name) ? ', alle Echos' : ''), dev:{ id:d.id, name:devLabel(d), raw:d.name, type:d.type } });
     if (sdkPossible() && (!sdkErr || isSdkDev(want))) devShown.push({ id:'__sdk', label:sdkErr ? SDK_LABEL + ' (geht hier nicht)' : sdkDeviceId ? SDK_LABEL : SDK_LABEL + ' (startet noch …)', dev:{ sdk:true, name:SDK_LABEL } });
     sel.innerHTML = '';
     for (const o of devShown) { const op = document.createElement('option'); op.value = o.id; op.textContent = o.label; sel.append(op); }
@@ -1372,17 +1372,44 @@ async function buildDeck(ids, onProgress){
 
 /* ---------- Abspielen ---------- */
 const seconds = () => Math.min(60, Math.max(1, Number(store.get('seconds', 20)) || 20));
-/* Nach der Hörzeit: 'run' = der Song läuft weiter, bis die nächste Karte startet (wie bei Hitster). 'pause' = er stoppt.
-   Ein iPhone legt Spotify wenige Sekunden nach dem Pausieren schlafen, solange P-Quiz vorne ist. Läuft Musik, bleibt es wach.
-   Ohne eigene Wahl: bei Handy und Tablet weiterlaufen, bei Echo, Computer und Co. pausieren. */
-const afterClip = () => { const v = store.get('after', null); return v === 'run' || v === 'pause' ? v : isPhoneDev(store.get('device', null)) ? 'run' : 'pause'; };
+/* Nach der Hörzeit:
+   'silence' = Spotify spielt einen stillen Track weiter. Man hört nichts, aber die Spotify-App auf dem iPhone bleibt wach.
+   'run'     = der Song läuft weiter, bis die nächste Karte startet.
+   'pause'   = Spotify pausiert. Gut für Echo oder Computer. Ein iPhone legt Spotify dann nach wenigen Sekunden schlafen.
+   Ohne eigene Wahl: bei Handy und Tablet Stille, sonst Pause. */
+const afterClip = () => { const v = store.get('after', null); return ['silence', 'run', 'pause'].includes(v) ? v : isPhoneDev(store.get('device', null)) ? 'silence' : 'pause'; };
 const keepRun = () => afterClip() === 'run';
+const AFTER_HINT = {
+  silence:'Nach der Hörzeit spielt Spotify einen stillen Track. Man hört nichts, aber Spotify auf dem iPhone bleibt wach und die nächste Karte startet sofort.',
+  run:'Der Song spielt nach der Hörzeit weiter, bis die nächste Karte startet. Auch so bleibt Spotify auf dem iPhone wach.',
+  pause:'Der Song stoppt nach der Hörzeit. Gut für Echo oder Computer. Auf dem iPhone schläft Spotify dann nach wenigen Sekunden ein.'
+};
 function renderAfter(){
   const v = afterClip();
   document.querySelectorAll('#afterSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
-  $('#afterHint').textContent = v === 'run'
-    ? 'Der Song spielt nach der Hörzeit weiter, bis die nächste Karte startet. So bleibt Spotify auf dem iPhone wach.'
-    : 'Der Song stoppt nach der Hörzeit. Gut für Echo oder Computer. Auf dem iPhone schläft Spotify dann nach wenigen Sekunden ein.';
+  $('#afterHint').textContent = AFTER_HINT[v];
+}
+/* Stille Spotify-Tracks (je etwa 10 Minuten). Nacheinander ergibt das rund 40 Minuten Stille.
+   Fehlt einer bei Spotify, springt Spotify von selbst zum nächsten. */
+const SILENCE = ['spotify:track:05uF1aas25zdpyWsOltkJf', 'spotify:track:6gWSdJ0JS8hPUrKDUrgEwj', 'spotify:track:0vqOexC3BQ4wpFREmBoQqm', 'spotify:track:3mkOlbSv5RYadx0JsjTrKq'];
+let silentOn = false;
+async function playSilence(devId){
+  if (!devId || devId === sdkDeviceId) { pauseMusic(); return; }
+  silentOn = true;
+  try { await api('/me/player/play?device_id=' + encodeURIComponent(devId), { method:'PUT', body:JSON.stringify({ uris:SILENCE, position_ms:0 }) }); }
+  catch (e) { silentOn = false; if (e instanceof AuthError) handleError(e); }
+}
+// Zwischen zwei Songs: je nach Einstellung Stille, weiterlaufen lassen oder pausieren
+function holdMusic(){
+  const v = afterClip();
+  if (v === 'run') { clip.running = true; return; }
+  if (v === 'silence' && clip.dev && clip.dev.id) { playSilence(clip.dev.id); return; }
+  pauseMusic();
+}
+// Schon beim Öffnen des Spielraums und beim Spielstart das Handy mit Stille wachhalten, damit die erste Karte sofort läuft
+async function wakeHold(){
+  if (afterClip() !== 'silence' || clip.on || clip.running || silentOn) return;
+  try { const dev = await resolveDevice(); if (!dev.guess) { clip.dev = dev; await playSilence(dev.id); } } catch {}
 }
 function startPos(dur, secs){
   const L = secs * 1000 + 500;
@@ -1419,7 +1446,7 @@ async function resolveDevice(){
 }
 const isSkippable = e => e instanceof ApiError && (e.status === 400 || (e.status === 403 && e.reason !== 'PREMIUM_REQUIRED'));
 const clip = { token:0, timer:null, on:false };
-async function pauseMusic(){ try { await api('/me/player/pause', { method:'PUT' }); } catch (e) { if (e instanceof AuthError) handleError(e); } }
+async function pauseMusic(){ silentOn = false; try { await api('/me/player/pause', { method:'PUT' }); } catch (e) { if (e instanceof AuthError) handleError(e); } }
 // resume = { pos, left }: nach einer Pause an der gestoppten Stelle weiterspielen, nur noch die restliche Hörzeit
 async function playClip(card, onEnd, resume){
   const tok = ++clip.token; clearTimeout(clip.timer);
@@ -1427,6 +1454,7 @@ async function playClip(card, onEnd, resume){
   const pos = resume ? resume.pos : (card.start || 0);
   try {
     await api('/me/player/play?device_id=' + encodeURIComponent(dev.id), { method:'PUT', body:JSON.stringify({ uris:[card.uri], position_ms:pos }) });
+    silentOn = false;
   } catch (e) {
     if (e instanceof ApiError && e.status === 404 && dev.help) throw new SleepError(dev.help);
     if (isSkippable(e)) throw new SkipError();
@@ -1435,7 +1463,7 @@ async function playClip(card, onEnd, resume){
   if (tok !== clip.token) return null;
   const dur = resume ? Math.max(0, resume.left) : seconds() * 1000;
   Object.assign(clip, { on:true, card, onEnd, dev, pos0:pos, t0:Date.now(), end:Date.now() + dur });
-  clip.timer = setTimeout(() => { if (tok === clip.token) { clip.token++; clip.on = false; if (keepRun()) clip.running = true; else pauseMusic(); onEnd(); } }, dur);
+  clip.timer = setTimeout(() => { if (tok === clip.token) { clip.token++; clip.on = false; holdMusic(); onEnd(); } }, dur);
   return { tok, dur };
 }
 /* Nach 3 Sekunden bei Spotify nachfragen, ob der Song wirklich läuft.
@@ -1455,8 +1483,14 @@ const silentText = () => {
   const d = store.get('device', null), n = isSdkDev(d) ? 'diesem Browser' : d ? '„' + d.name + '“' : 'dem Abspielgerät';
   return 'Spotify meldet, dass auf ' + n + ' nichts läuft. Öffne dort Spotify, spiel kurz etwas an und versuch es nochmal. Unter Musik kannst du mit „Gerät testen“ prüfen, ob der Ton ankommt, oder ein anderes Gerät wählen.';
 };
-// keep: Musik nicht anhalten (gleich startet ein neuer Song, oder sie soll das iPhone wach halten)
-function stopClip(keep){ clip.token++; clearTimeout(clip.timer); if (!keep) pauseMusic(); else if (clip.on) clip.running = true; clip.on = false; if (!keep) clip.running = false; }
+// keep: nichts anhalten (gleich startet ein neuer Song). end: wirklich pausieren (Spiel vorbei). Sonst je nach Einstellung Stille oder Pause.
+function stopClip(keep){
+  clip.token++; clearTimeout(clip.timer);
+  if (keep === 'end') { clip.running = false; pauseMusic(); }
+  else if (keep) { if (clip.on) clip.running = true; }
+  else { clip.running = false; if (afterClip() === 'run') pauseMusic(); else holdMusic(); }
+  clip.on = false;
+}
 
 /* ---------- Aufgaben ---------- */
 const COLORS = [
@@ -2073,6 +2107,7 @@ async function ensureRoom(){
   return code;
 }
 async function openLobby(){
+  wakeHold();
   show('lobby');
   $('#lobbyMode').textContent = 'Modus: ' + MODES[running() ? M.mode : rules().mode].name;
   $('#lobbyStart').textContent = running() ? 'Zurück zum Spiel' : 'Spiel starten';
@@ -2238,6 +2273,7 @@ async function startMatch(){
         deck:{ cards:[], pos:0 }, pl:{}, order:[], turn:null, lastTurn:null, cards:[], songIdx:0,
         color:null, timer:null, winners:[], revealed:false, newCard:null, msg:'Songs werden geladen …', intro:introData(r) };
   const mm = M, t0 = Date.now();
+  wakeHold();
   showIntro(M.intro);
   show('mgame'); renderMatch(); pushState();
   try {
@@ -2453,7 +2489,7 @@ function pauseGame(){
   pausedMusic = clip.on ? { card:clip.card, onEnd:clip.onEnd, pos:clip.pos0 + (now - clip.t0), left:Math.max(0, clip.end - now) } : null;
   const t = M.timer ? { kind:M.timer.kind, total:M.timer.total, left:Math.max(0, M.timer.local - now) } : null;
   clip.token++; clearTimeout(clip.timer);
-  if (clip.on || clip.running) pauseMusic();
+  if (clip.on || clip.running) { if (afterClip() === 'silence' && clip.dev) playSilence(clip.dev.id); else pauseMusic(); }
   clip.running = false;
   clip.on = false;
   M.timer = null; M.paused = { t };
@@ -2554,7 +2590,7 @@ async function replay(){
 function soloFlip(){ if (M && M.phase === 'stopped') { M.phase = 'reveal'; M.revealed = true; saveMatch(); pushState(); renderMatch(); } }
 function endMatchToHome(){
   if (running() && M.round && !confirm('Spiel beenden? Der Spielstand wird gelöscht. Die Mitspieler bleiben im Spielraum.')) return;
-  stopClip(); clearPause();
+  stopClip('end'); clearPause();
   store.del('match'); M = null;
   pushState();
   openHome();
