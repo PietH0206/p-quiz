@@ -471,6 +471,7 @@ ol.steps li{margin:.25rem 0}
 <!-- Hauptmenü (Haupthandy) -->
 <section class="screen" id="home" hidden>
   <div class="topbar"><h1>P-Quiz</h1><button class="nav" id="logoutBtn" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9 3H4v10h5M7 8h7M11.5 5.5 14 8l-2.5 2.5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>Abmelden</button></div>
+  <div class="box" id="roomBox"></div>
   <button class="box musicbtn" id="toMusic" type="button">
     <span class="boxhead" style="margin:0"><h2>Musik</h2><span class="nav sm">Ändern</span></span>
     <span class="mstats" id="musicInfo"></span>
@@ -482,8 +483,7 @@ ol.steps li{margin:.25rem 0}
   <div class="box" id="rulesBox"></div>
   <div class="startarea">
     <button class="btn secondary" id="resumeBtn" hidden></button>
-    <button class="btn primary" id="goBtn">Spielraum öffnen</button>
-    <button class="link" id="showRoomBtn" style="justify-self:center" hidden>Spielraum mit QR-Code zeigen</button>
+    <button class="btn primary" id="goBtn">Spiel starten</button>
   </div>
 </section>
 
@@ -597,10 +597,10 @@ ol.steps li{margin:.25rem 0}
   <div class="startarea"><button class="btn primary" id="bSave">Aufgabe speichern</button></div>
 </section>
 
-<!-- Spielraum (Haupthandy) -->
+<!-- Warteraum (Haupthandy) -->
 <section class="screen" id="lobby" hidden>
-  <div class="topbar"><h1>Spielraum</h1><button class="nav" id="lobbyBack" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>Menü</button></div>
-  <p class="muted" style="margin:0"><span id="lobbyMode"></span>. Scannt den Code mit der Handykamera oder gebt den Raumcode ein.</p>
+  <div class="topbar"><h1>Warteraum</h1><button class="nav" id="lobbyBack" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>Menü</button></div>
+  <p class="muted" style="margin:0">Scannt den Code mit der Handykamera oder gebt den Raumcode ein. Hier wartet ihr, bis das Haupthandy ein Spiel startet.</p>
   <div class="qr" id="qrBox"></div>
   <div class="roomcode"><div class="label">Raumcode</div><div class="code" id="roomCode">····</div></div>
   <div class="box">
@@ -609,9 +609,11 @@ ol.steps li{margin:.25rem 0}
   </div>
   <div class="box" id="lobbyLevels" hidden></div>
   <div class="startarea">
+    <p class="small" id="lobbyMode" style="margin:0;text-align:center"></p>
     <p class="muted small" id="lobbyInfo" style="margin:0;text-align:center"></p>
     <button class="btn primary" id="lobbyStart">Spiel starten</button>
-    <button class="link" id="closeRoom" style="justify-self:center">Spielraum schließen</button>
+    <button class="btn secondary" id="lobbySettings">Musik, Modus und Regeln einstellen</button>
+    <button class="link" id="closeRoom" style="justify-self:center">Warteraum schließen</button>
   </div>
 </section>
 
@@ -761,7 +763,7 @@ const joinUrl = code => location.origin + location.pathname + '?join=' + code;
 const nameKey = n => String(n || '').trim().toLowerCase().replace(/[.#$\[\]\/\s]+/g, '_') || '_';
 function fbFail(e){
   console.error(e);
-  return 'Keine Verbindung zum Spielraum. Prüfe das Internet und versuch es nochmal.';
+  return 'Keine Verbindung zum Warteraum. Prüfe das Internet und versuch es nochmal.';
 }
 
 /* ---------- Speicher (Präfix pq.) ---------- */
@@ -1221,7 +1223,7 @@ function openPlaylists(){
 }
 
 /* ---------- Stapel ---------- */
-const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '');
 const cleanTitle = s => String(s || '').replace(/\s[-–]\s.*$/, '').replace(/[(\[].*?[)\]]/g, '');
 const rnd = n => crypto.getRandomValues(new Uint32Array(1))[0] % n;
 function shuffle(a){ for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
@@ -1563,7 +1565,7 @@ function needsInput(task, check){
    Zusätze wie „- Remastered 2011“, „- Single Version“, „(feat. …)“ oder „[Live]“ gehören nicht zum Titel.
    Groß- und Kleinschreibung, Satzzeichen, Leerzeichen und Akzente zählen nie. */
 const stripExtras = s => String(s || '').replace(/\s+[-–—]\s+.*$/, '').replace(/\s*[(\[][^)\]]*[)\]]/g, '').replace(/\s+(feat|ft|featuring)\.?\s.*$/i, '').trim();
-const canon = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/ß/g, 'ss')
+const canon = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ß/g, 'ss')
   .replace(/&/g, ' and ').replace(/\bund\b/g, ' and ').replace(/[^a-z0-9]+/g, '');
 function titleTargets(t){
   const a = stripExtras(t), b = String(t || '').replace(/\s+[-–—]\s+.*$/, '').replace(/\s+(feat|ft|featuring)\.?\s.*$/i, '');
@@ -1799,7 +1801,7 @@ function setLevel(k, v){
 function drawLevels(box){
   box.append(Object.assign(txt('h2', '', 'Schwierigkeit'), { style:'margin:1rem 0 .3rem' }));
   const seen = new Set(), list = playerList(room.players).filter(([, p]) => p.online !== false && !seen.has(nameKey(p.name)) && seen.add(nameKey(p.name)));
-  if (!list.length) { box.append(txt('p', 'muted small', 'Sobald Spieler im Spielraum sind, legst du hier fest, wer Normal und wer Fortgeschritten spielt.')); return; }
+  if (!list.length) { box.append(txt('p', 'muted small', 'Sobald Spieler im Warteraum sind, legst du hier fest, wer Normal und wer Fortgeschritten spielt.')); return; }
   list.forEach(([, p], i) => {
     const k = nameKey(p.name), row = el('div', 'row2' + (i ? '' : ' first')), g = el('div', 'seg');
     for (const v of ['normal', 'adv']) { const b = txt('button', levelOf(k) === v ? 'on' : '', LEVEL_NAMES[v]); b.type = 'button'; b.onclick = () => setLevel(k, v); g.append(b); }
@@ -1827,7 +1829,7 @@ function drawPlChoice(box, pool){
   box.append(Object.assign(txt('h2', '', 'Playlists pro Spieler'), { style:'margin:1rem 0 .3rem' }));
   if (!pool.length) { box.append(txt('p', 'muted small', playlists.length ? 'Wähle unter Musik zuerst die Playlists aus, die ins Spiel kommen.' : 'Playlists werden geladen …')); return; }
   const seen = new Set(), list = playerList(room.players).filter(([, p]) => p.online !== false && !seen.has(nameKey(p.name)) && seen.add(nameKey(p.name)));
-  if (!list.length) { box.append(txt('p', 'muted small', 'Sobald Spieler im Spielraum sind, legst du hier fest, wer welche Playlists bekommt.')); return; }
+  if (!list.length) { box.append(txt('p', 'muted small', 'Sobald Spieler im Warteraum sind, legst du hier fest, wer welche Playlists bekommt.')); return; }
   list.forEach(([, p], i) => {
     const k = nameKey(p.name), skip = plSkipOf(k), n = pool.filter(id => !skip.has(id)).length;
     const row = el('div', 'plrow' + (i ? '' : ' first')), head = el('div', 'plhead'), chips = el('div', 'plchips');
@@ -1899,9 +1901,8 @@ function renderHome(){
   if (r.auto) hints[r.mode] += ' Automatisch: 5 Sekunden nach dem Aufdecken startet die nächste Karte.';
   box.append(Object.assign(txt('p', 'muted small', hints[r.mode]), { style:'margin:.7rem 0 0' }));
   const on = room.code ? onlineKeys().size : 0;
-  $('#goBtn').textContent = r.mode === 'solo' ? 'Spiel starten' : on ? 'Spiel starten mit ' + on + (on === 1 ? ' Spieler' : ' Spielern') : room.code ? 'Spielraum ' + room.code + ' öffnen' : 'Spielraum öffnen';
-  $('#showRoomBtn').hidden = !room.code || r.mode === 'solo' || !on;
-  $('#showRoomBtn').textContent = 'Spielraum ' + (room.code || '') + ' mit QR-Code zeigen';
+  $('#goBtn').textContent = r.mode === 'solo' || !on ? 'Spiel starten' : 'Spiel starten mit ' + on + (on === 1 ? ' Spieler' : ' Spielern');
+  renderRoomBox();
   let saved = store.get('match', null);
   if (saved && (Array.isArray(saved.colors) || !MODES[saved.mode])) { store.del('match'); saved = null; }
   const rb = $('#resumeBtn');
@@ -1918,7 +1919,26 @@ function colorCard(){
 }
 function goFromHome(){
   if (!validSelection().length) { toast(playlists.length ? 'Wähle unter Musik zuerst mindestens eine Playlist.' : 'Playlists werden noch geladen.'); return; }
-  if (rules().mode === 'solo' || (room.code && onlineKeys().size)) startMatch(); else openLobby();
+  if (rules().mode === 'solo' || (room.code && onlineKeys().size)) { startMatch(); return; }
+  if (room.code) toast('Es ist noch niemand im Warteraum.');
+  openLobby();
+}
+/* Warteraum im Hauptmenü: lässt sich vor jedem Spiel öffnen. Die Mitspieler warten dort, während Musik, Modus und Regeln eingestellt werden. */
+let roomOpening = false;
+function renderRoomBox(){
+  const box = $('#roomBox');
+  if (!room.code) {
+    box.innerHTML = '<div class="boxhead"><h2>Warteraum</h2></div><p class="muted small" style="margin:0 0 .7rem">Öffne den Warteraum schon jetzt. Die Mitspieler können beitreten, während du Musik, Modus und Regeln einstellst. Das Spiel startet erst, wenn du es startest.</p>';
+    const b = txt('button', 'btn secondary', roomOpening ? 'Warteraum wird geöffnet …' : 'Warteraum öffnen'); b.type = 'button'; b.id = 'roomOpen'; b.disabled = roomOpening;
+    b.onclick = openLobby; box.append(b);
+    return;
+  }
+  const on = onlineKeys().size;
+  box.innerHTML = '<div class="boxhead"><h2>Warteraum ' + esc(room.code) + '</h2></div>';
+  const qr = el('button', 'nav sm', 'QR-Code zeigen'); qr.type = 'button'; qr.id = 'roomShow'; qr.onclick = openLobby;
+  box.firstChild.append(qr);
+  box.append(Object.assign(txt('p', 'muted small', !on ? 'Noch niemand da. Mitspieler scannen den QR-Code oder geben den Code ' + room.code + ' ein.' : on === 1 ? '1 Spieler wartet.' : on + ' Spieler warten.'), { style:'margin:0 0 .5rem' }));
+  if (playerList(room.players).length) { const ppl = el('div', 'people'); drawPeople(ppl, room.players); box.append(ppl); }
 }
 
 /* ---------- Bingo-Farben, Aufgabenauswahl, Baukasten ---------- */
@@ -2109,13 +2129,16 @@ async function ensureRoom(){
 async function openLobby(){
   wakeHold();
   show('lobby');
-  $('#lobbyMode').textContent = 'Modus: ' + MODES[running() ? M.mode : rules().mode].name;
-  $('#lobbyStart').textContent = running() ? 'Zurück zum Spiel' : 'Spiel starten';
+  const mode = MODES[running() ? M.mode : rules().mode].name;
+  $('#lobbyMode').textContent = running() ? 'Läuft gerade: ' + mode : 'Als Nächstes: ' + mode;
+  $('#lobbyStart').textContent = running() ? 'Zurück zum Spiel' : mode + ' starten';
+  $('#lobbySettings').hidden = running();
   if (room.code) { pushState(); drawLobby(); return; }
   $('#roomCode').textContent = '····'; $('#qrBox').innerHTML = '';
-  $('#lobbyInfo').textContent = 'Spielraum wird geöffnet …';
-  try { await ensureRoom(); drawLobby(); }
-  catch (e) { $('#lobbyInfo').textContent = ''; showMsg(fbFail(e), openLobby); }
+  $('#lobbyInfo').textContent = 'Warteraum wird geöffnet …';
+  roomOpening = true;
+  try { await ensureRoom(); roomOpening = false; drawLobby(); }
+  catch (e) { roomOpening = false; $('#lobbyInfo').textContent = ''; showMsg(fbFail(e), openLobby); }
 }
 function tidyPlayers(){
   const byName = {};
@@ -2155,7 +2178,7 @@ function drawLobby(){
   const on = onlineKeys().size, list = playerList(room.players);
   $('#peopleHead').textContent = !list.length ? 'Noch niemand da' : on === 1 ? '1 Spieler ist drin' : on + ' Spieler sind drin';
   drawPeople($('#peopleList'), room.players);
-  $('#lobbyInfo').textContent = !running() && !on ? 'Sobald jemand beigetreten ist, kannst du starten.' : '';
+  $('#lobbyInfo').textContent = !running() && !on ? 'Sobald jemand beigetreten ist, kannst du starten. Bis dahin kannst du in Ruhe alles einstellen.' : '';
   const t = $('#toLobby'); t.hidden = false; t.textContent = 'Raum ' + room.code + ' (' + on + ')';
   const lv = $('#lobbyLevels'), mode = running() ? M.mode : rules().mode;
   const each = mode === 'turns' && (running() ? !!M.plEach : rules().plMode === 'each');
@@ -2164,13 +2187,14 @@ function drawLobby(){
 }
 function lobbyStart(){
   if (running()) { show('mgame'); renderMatch(); pushState(); return; }
-  if (!onlineKeys().size) { toast('Es ist noch niemand im Spielraum.'); return; }
-  startMatch();
+  if (!onlineKeys().size) { toast('Es ist noch niemand im Warteraum.'); return; }
+  goFromHome();
 }
 async function closeRoom(){
   if (!room.code) { openHome(); return; }
-  if (!confirm('Spielraum ' + room.code + ' schließen? Alle Mitspieler fliegen raus.')) return;
+  if (!confirm('Warteraum ' + room.code + ' schließen? Alle Mitspieler fliegen raus.')) return;
   const code = room.code;
+  if (silentOn) pauseMusic();
   if (room.unsub) room.unsub();
   if (room.aunsub) room.aunsub();
   Object.assign(room, { code:null, players:{}, unsub:null, aunsub:null, seen:{}, loaded:false });
@@ -2588,15 +2612,22 @@ async function replay(){
   } catch (e) { if (e instanceof SkipError) showMsg('Spotify spielt diesen Song gerade nicht ab.'); else handleError(e, replay); }
 }
 function soloFlip(){ if (M && M.phase === 'stopped') { M.phase = 'reveal'; M.revealed = true; saveMatch(); pushState(); renderMatch(); } }
+// Letztes fertiges Spiel, die Mitspieler sehen es im Warteraum
+let lastGame = null;
+function rememberGame(){
+  if (M && M.phase === 'over' && M.mode !== 'solo' && M.winners.length) lastGame = { mode:M.mode, winners:M.winners.map(k => (M.pl[k] && M.pl[k].name) || '').filter(Boolean) };
+}
 function endMatchToHome(){
-  if (running() && M.round && !confirm('Spiel beenden? Der Spielstand wird gelöscht. Die Mitspieler bleiben im Spielraum.')) return;
-  stopClip('end'); clearPause();
+  if (running() && M.round && !confirm('Spiel beenden? Der Spielstand wird gelöscht. Die Mitspieler kommen zurück in den Warteraum.')) return;
+  // Mit offenem Warteraum geht es gleich weiter: Stille hält das iPhone wach. Ohne Warteraum wirklich pausieren.
+  stopClip(room.code ? false : 'end'); clearPause();
+  rememberGame();
   store.del('match'); M = null;
   pushState();
   openHome();
 }
 function playAgain(){
-  stopClip(); clearPause(); M = null; store.del('match'); pushState();
+  stopClip(); clearPause(); rememberGame(); M = null; store.del('match'); pushState();
   if (rules().mode === 'solo' || (room.code && onlineKeys().size)) startMatch(); else openHome();
 }
 
@@ -2717,10 +2748,10 @@ function handleAction(k, p, a){
 function pushState(){
   if (!room.code || !FB.uid) return;
   if (!M) {
-    const r = rules(), lobby = { phase:'lobby', mode:r.mode, legend:{ normal:colorTasks('normal').map(id => taskById(id).name), adv:colorTasks('adv').map(id => taskById(id).name) }, levels:levels() };
+    const r = rules(), lobby = { phase:'lobby', mode:r.mode, last:lastGame, legend:{ normal:colorTasks('normal').map(id => taskById(id).name), adv:colorTasks('adv').map(id => taskById(id).name) }, levels:levels() };
     const pool = validSelection();
     if (r.mode === 'turns' && r.plMode === 'each' && pool.length) lobby.pls = Object.fromEntries([...onlineKeys()].map(k => [k, plFor(k, pool).map(plName)]));
-    FB.set('rooms/' + room.code + '/state', lobby).catch(() => {}); return;
+    FB.set('rooms/' + room.code + '/state', JSON.parse(JSON.stringify(lobby))).catch(() => {}); return;
   }
   const open = M.revealed || M.phase === 'over';
   const pl = {};
@@ -2913,7 +2944,10 @@ function renderMatch(){
       if (!replaying && !clip.on) btn('Nochmal hören', replay, false);
     }
   }
-  if (M.phase === 'over') { btn('Nochmal spielen', playAgain, true); btn('Zum Hauptmenü', endMatchToHome, false); }
+  if (M.phase === 'over') {
+    if (M.mode === 'solo' || !room.code) { btn('Nochmal spielen', playAgain, true); btn('Zum Hauptmenü', endMatchToHome, false); }
+    else { btn('Zurück in den Warteraum', endMatchToHome, true); btn('Nochmal spielen: ' + MODES[M.mode].name, playAgain, false); }
+  }
   const ar = $('#mAutoRow'); ar.innerHTML = ''; ar.className = 'row2 first col'; ar.hidden = M.phase === 'over';
   if (!ar.hidden) {
     const g = el('div', 'seg');
@@ -3027,7 +3061,7 @@ function playerGone(text){
 }
 function drawPlayer(r){
   seat.room = r;
-  if (!r || !r.host) { playerGone('Der Spielraum wurde geschlossen.'); return; }
+  if (!r || !r.host) { playerGone('Der Warteraum wurde geschlossen.'); return; }
   if ((!r.players || r.players[FB.uid] === undefined) && seat.name) {
     const taken = Object.values(r.players || {}).some(p => p && p.name && nameKey(p.name) === seat.key);
     if (taken) { playerGone('Du spielst jetzt auf einem anderen Handy weiter.'); return; }
@@ -3045,15 +3079,27 @@ function drawPlayer(r){
     setHtml($('#pMain'), '<div class="pintro">' + introHtml(st.intro) + '</div>');
     return;
   }
-  if (st.phase === 'lobby' || !st.mode || (st.mode !== 'solo' && !meP)) {
+  if (st.phase === 'lobby' || !st.mode || st.mode === 'solo' || !meP) {
     mini.hidden = true; cards.hidden = true;
     ['#pBanner', '#pHist', '#pResult', '#pMain', '#pActions', '#pAuto', '#pStand', '#pDraw'].forEach(s => { $(s).innerHTML = ''; delete $(s).dataset.html; });
     seat.formKey = '';
-    if (st.mode === 'bingo') setHtml($('#pMain'), legendHtml(st.legend, st.levels && st.levels[seat.key] === 'adv' ? 'adv' : 'normal'));
-    else if (st.pls && st.pls[seat.key]) setHtml($('#pMain'), '<div class="box"><h2>Deine Playlists</h2><p class="muted" style="margin:.4rem 0 0">' + esc(st.pls[seat.key].join(', ')) + '</p></div>');
+    const lobby = st.phase === 'lobby' || !st.phase;
+    let html = '';
+    if (lobby || st.mode === 'solo') {
+      const last = st.last && st.last.winners && st.last.winners.length ? st.last : null;
+      html = '<div class="box"><h2>Warteraum</h2>' +
+        (st.mode === 'solo' && !lobby ? '<p style="margin:.4rem 0 0">Das Haupthandy spielt gerade ohne Mitspieler. Du wartest hier auf das nächste Spiel.</p>'
+          : '<p style="margin:.4rem 0 0">Als Nächstes: <b>' + esc(MODES[st.mode] ? MODES[st.mode].name : 'ein neues Spiel') + '</b></p>' +
+            '<p class="muted small" style="margin:.35rem 0 0">Sobald das Haupthandy das Spiel startet, geht es hier los.</p>') +
+        (last ? '<p class="muted small" style="margin:.35rem 0 0">Letztes Spiel (' + esc(MODES[last.mode] ? MODES[last.mode].name : '') + '): ' +
+          esc(last.winners.map(n => nameKey(n) === seat.key ? 'du' : n).join(' und ')) + (last.winners.length > 1 ? ' haben' : nameKey(last.winners[0]) === seat.key ? ' hast' : ' hat') + ' gewonnen.</p>' : '') + '</div>';
+    }
+    if (st.mode === 'bingo') html += legendHtml(st.legend, st.levels && st.levels[seat.key] === 'adv' ? 'adv' : 'normal');
+    else if (st.pls && st.pls[seat.key]) html += '<div class="box"><h2>Deine Playlists</h2><p class="muted" style="margin:.4rem 0 0">' + esc(st.pls[seat.key].join(', ')) + '</p></div>';
+    setHtml($('#pMain'), html);
     wait.hidden = false;
-    wait.textContent = st.phase === 'lobby' || !st.phase ? 'Du bist drin. Warte, bis das Haupthandy das Spiel startet.' + (st.mode ? ' Gespielt wird: ' + MODES[st.mode].name + '.' : '')
-                                         : st.phase === 'loading' ? 'Das Spiel wird vorbereitet …' : 'Gleich bist du dabei …';
+    wait.textContent = lobby || st.mode === 'solo' ? '' : st.phase === 'loading' ? 'Das Spiel wird vorbereitet …' : 'Gleich bist du dabei …';
+    if (!wait.textContent) wait.hidden = true;
     drawOthers(r, st); return;
   }
   wait.hidden = true;
@@ -3475,7 +3521,6 @@ function wire(){
   $('#connectPhone').onclick = () => watchPhone(null);
   $('#msgSpotify').onclick = () => { const f = retryFn; $('#msg').hidden = true; watchPhone(f); };
   $('#goBtn').onclick = goFromHome;
-  $('#showRoomBtn').onclick = openLobby;
   $('#resumeBtn').onclick = resumeMatch;
   $('#colorsBack').onclick = openHome;
   $('#pickBack').onclick = openColors;
@@ -3493,6 +3538,7 @@ function wire(){
   $('#lobbyBack').onclick = () => { if (running()) { show('mgame'); renderMatch(); } else openHome(); };
   $('#lobbyStart').onclick = lobbyStart;
   $('#closeRoom').onclick = closeRoom;
+  $('#lobbySettings').onclick = openHome;
   $('#toLobby').onclick = openLobby;
   $('#mMenu').onclick = endMatchToHome;
   $('#msgRetry').onclick = () => { $('#msg').hidden = true; if (retryFn) retryFn(); };
