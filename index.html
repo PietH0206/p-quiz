@@ -1820,7 +1820,7 @@ function bingoMissing(marks, win){
   }
   return Math.min(...LINES.map(l => l.filter(i => !marks[i]).length));
 }
-  /* ---------- Hauptmenü und Regeln ---------- */
+/* ---------- Hauptmenü und Regeln ---------- */
 const MODES = {
   turns:{ name:'Zeitstrahl reihum', desc:'Einer ist dran und ordnet ein, die anderen schauen zu.' },
   together:{ name:'Zeitstrahl gleichzeitig', desc:'Alle ordnen denselben Song in ihren eigenen Zeitstrahl ein.' },
@@ -2412,6 +2412,7 @@ function renderAdmin(){
   const nb = (label, fn, cls) => { const b = txt('button', 'nav' + (cls ? ' ' + cls : ''), label); b.type = 'button'; b.onclick = fn; bar.append(b); return b; };
   if (M.phase !== 'over') { if (M.paused) nb('▶ Play', resumeGame, 'done'); else if (canPause()) nb('❚❚ Pause', pauseGame); }
   nb('Raum ' + room.code + ' (' + onlineKeys().size + ')', openLobby);
+  if (playerList(room.players).some(([uid]) => uid !== FB.uid)) nb('Spieler entfernen', kickSheet);
   if (M.phase !== 'over') nb('Spiel beenden', endMatchToHome);
   nb('In die Mitte legen', () => setSelfPlay(false));
   if (M.revealed && M.cards.length && !(M.phase === 'over' && M.mode === 'bingo')) { const f = nb('Jahr falsch?', openFix); f.classList.add('sm'); }
@@ -2420,6 +2421,17 @@ function renderAdmin(){
     const b2 = txt('button', 'btn secondary', 'Nochmal spielen: ' + MODES[M.mode].name); b2.type = 'button'; b2.onclick = playAgain;
     end.append(b1, b2);
   }
+}
+// Spieler entfernen direkt aus der Spieleransicht. Nur das mitspielende Haupthandy hat diesen Knopf, normale Spielerhandys nicht.
+function kickSheet(){
+  $('#peekTitle').textContent = 'Spieler entfernen';
+  const body = $('#peekBody'); body.innerHTML = '';
+  if (!playerList(room.players).some(([uid]) => uid !== FB.uid)) { body.append(txt('p', 'muted', 'Außer dir ist niemand im Raum.')); $('#peek').hidden = false; return; }
+  body.append(txt('p', 'muted small', 'Tippe auf einen Namen, um ihn aus dem Spiel und dem Warteraum zu entfernen.'));
+  const ppl = el('div', 'people');
+  drawPeople(ppl, Object.fromEntries(Object.entries(room.players).filter(([uid]) => uid !== FB.uid)), null, null, async (uid, name) => { await kickPlayer(uid, name); if (!$('#peek').hidden) kickSheet(); });
+  body.append(ppl);
+  $('#peek').hidden = false;
 }
 // Während eines Spiels in der Mitte doch selbst mitspielen
 function selfJoinSheet(){
@@ -3916,4 +3928,3 @@ function wire(){
 </script>
 </body>
 </html>
-
