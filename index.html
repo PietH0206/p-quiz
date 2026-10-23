@@ -1820,7 +1820,7 @@ function bingoMissing(marks, win){
   }
   return Math.min(...LINES.map(l => l.filter(i => !marks[i]).length));
 }
-/* ---------- Hauptmenü und Regeln ---------- */
+  /* ---------- Hauptmenü und Regeln ---------- */
 const MODES = {
   turns:{ name:'Zeitstrahl reihum', desc:'Einer ist dran und ordnet ein, die anderen schauen zu.' },
   together:{ name:'Zeitstrahl gleichzeitig', desc:'Alle ordnen denselben Song in ihren eigenen Zeitstrahl ein.' },
@@ -2012,6 +2012,11 @@ function renderRoomBox(){
   box.firstChild.append(qr);
   box.append(Object.assign(txt('p', 'muted small', !on ? 'Noch niemand da. Mitspieler scannen den QR-Code oder geben den Code ' + room.code + ' ein.' : on === 1 ? '1 Spieler wartet.' : on + ' Spieler warten.'), { style:'margin:0 0 .5rem' }));
   if (playerList(room.players).length) { const ppl = el('div', 'people'); drawPeople(ppl, room.players); box.append(ppl); }
+  // Schon vor dem Spiel: Spieler aus dem Warteraum entfernen, direkt im Hauptmenü (auch wenn das Haupthandy mitspielt)
+  if (playerList(room.players).some(([uid]) => uid !== FB.uid)) {
+    const k = txt('button', 'nav sm', 'Spieler entfernen'); k.type = 'button'; k.id = 'roomKick'; k.style.marginTop = '.7rem'; k.onclick = kickSheet;
+    box.append(k);
+  }
 }
 
 /* ---------- Bingo-Farben, Aufgabenauswahl, Baukasten ---------- */
@@ -3004,7 +3009,9 @@ function handleAction(k, p, a){
   }
   if (a.t === 'ready') {
     if (M.mode === 'turns' || a.round !== M.round || M.paused || !['ready', 'reveal'].includes(M.phase)) return;
-    if (M.phase === 'reveal' && (p.result === 'pending' || (p.canMark !== null && p.canMark !== undefined))) return;
+    if (M.phase === 'reveal' && p.result === 'pending') return;
+    // Richtig getippt, aber kein Feld befüllt: nur mit „Trotzdem weiter“. Das Feld verfällt dann für diese Runde.
+    if (M.phase === 'reveal' && p.canMark !== null && p.canMark !== undefined) { if (!a.skipMark) return; p.canMark = null; }
     M.ready = { ...(M.ready || {}), [k]:true };
     saveMatch(); pushState(); renderMatch(); checkReady();
     return;
@@ -3065,7 +3072,7 @@ function pushState(){
     color:M.color, tasks:M.tasks || null, hist:M.hist || [],
     cards:open && M.cards.length ? M.cards.map(c => ({ title:c.title, artist:c.artist, year:c.year, y0:c.y0 || '', album:c.album, img:c.img || '', uri:c.uri || '' })) : null,
     newCard:open ? M.newCard : null, winners:M.winners, pl, intro:M.phase === 'loading' && M.intro ? M.intro : null,
-    n:M.deck.pos, total:M.deck.cards.length, kicked:room.kicked
+    n:M.deck.pos, total:M.deck.cards.length, kicked:room.kicked, played:M.tieBefore || null
   };
   FB.set('rooms/' + room.code + '/state', JSON.parse(JSON.stringify(st))).catch(() => {});
 }
@@ -3096,6 +3103,40 @@ function cardHtml(c, label){
     '<p class="title">' + esc(c.title) + '</p><p class="artist">' + esc(c.artist) + '</p>' +
     (c.album ? '<p class="album">Album: ' + esc(c.album) + (c.y0 ? ' (Ausgabe ' + esc(c.y0) + ')' : '') + '</p>' : '') +
     '</article>';
+}
+/* Gerät testen: Spotify spielt die Stille (dieselben stillen Tracks wie zwischen den Songs) und P-Quiz fragt nach, ob Spotify wirklich spielt.
+   Man hört dabei nichts, und es braucht keine Playlist. */
+async function testSilence(){
+  const info = $('#devInfo'), say = (t, bad) => { info.hidden = false; info.textContent = t; info.className = 'small' + (bad ? ' bad' : ''); };
+  if (running() && M.round) { toast('Während eines laufenden Spiels geht der Test nicht.'); return; }
+  activateSdk();
+  say('Die Stille wird gestartet …');
+  try {
+    const tok = ++clip.token; clearTimeout(clip.timer); clip.on = false;
+    const dev = await resolveDevice();
+    try { await api('/me/player/play?device_id=' + encodeURIComponent(dev.id), { method:'PUT', body:JSON.stringify({ uris:SILENCE, position_ms:0 }) }); }
+    catch (e) { if (e instanceof ApiError && e.status === 404 && dev.help) throw new SleepError(dev.help); if (isSkippable(e)) throw new SkipError(); throw e; }
+    silentOn = true;
+    await sleep(3000);
+    if (tok !== clip.token) return;
+    const st = await api('/me/player');
+    if (st && st.item && st.is_playing !== false) {
+      const where = st.device ? (st.device.name === SDK_NAME ? 'diesem Browser' : '„' + st.device.name + '“') : 'dem Gerät';
+      say('✓ Spotify spielt auf ' + where + ' die Stille. Man hört nichts, das ist richtig so. Das Gerät ist bereit.');
+      if (afterClip() === 'pause') pauseMusic();
+    } else say('Spotify meldet, dass nichts läuft. Öffne Spotify auf dem Gerät, spiel kurz etwas an, tippe auf Suchen und teste nochmal. Oder wähle ein anderes Gerät.', true);
+  } catch (e) {
+    if (e instanceof SkipError) say('Spotify konnte die Stille nicht abspielen. Teste nochmal.', true);
+    else if (e instanceof UserError) { say(e.message, true); if (e instanceof SleepError) $('#devHelp').hidden = false; }
+    else { info.hidden = true; handleError(e, testSilence); }
+  }
+}
+// Bingo: Schallplatte in der Farbe der Runde (ohne Farbe wieder normal)
+function tintDisc(disc, colorIdx){
+  const c = colorIdx !== null && colorIdx !== undefined ? COLORS[colorIdx] : null;
+  disc.classList.toggle('tint', !!c);
+  if (c) { disc.style.setProperty('--tint', c.bg); disc.style.setProperty('--tintfg', c.fg); }
+  else { disc.style.removeProperty('--tint'); disc.style.removeProperty('--tintfg'); }
 }
 function bannerHtml(colorIdx, title, extra){
   const c = COLORS[colorIdx];
@@ -3199,6 +3240,7 @@ function renderMatch(){
   $('#mCards').className = 'cards' + (M.cards.length > 2 ? ' three' : M.cards.length > 1 ? ' two' : '');
   if (showCards) setHtml($('#mCards'), M.cards.map((c, i) => cardHtml(c, M.cards.length > 1 ? 'Song ' + (i + 1) : '')).join(''));
   $('#mRecord').classList.toggle('spin', !M.paused && ((M.phase === 'playing' && !M.gap) || replaying));
+  tintDisc($('#mDisc'), M.mode === 'bingo' && M.round && M.phase !== 'ready' ? M.color : null);
   const pt = M.paused && M.paused.t;
   if (pt && pt.kind !== 'next') {
     $('#mProg').style.strokeDashoffset = String(RING * Math.min(1, 1 - pt.left / pt.total));
@@ -3438,6 +3480,7 @@ function drawPlayer(r){
   $('#pSub').hidden = !(iAmNext && ['ready', 'loading', 'playing', 'placing'].includes(st.phase));
   mini.classList.toggle('mine', st.mode === 'turns' && ((myTurn && st.phase !== 'reveal') || (st.phase === 'reveal' && st.next === seat.key)));
   $('#pRecord').classList.toggle('spin', !st.paused && ((st.phase === 'playing' && !st.gap) || replaying));
+  tintDisc($('#pRecord').parentNode, st.mode === 'bingo' && st.round && st.phase !== 'ready' ? st.color : null);
   const placedMe = meP && (meP.placed || seat.sentRound === st.round);
   const watching = !!(st.tie && !st.tie.includes(seat.key));
   const tieNames = st.tie ? st.tie.map(k => k === seat.key ? 'dir' : name(k)) : [];
@@ -3489,21 +3532,26 @@ function drawPlayer(r){
         : meP.result === 'pending' ? '<div class="result info">Hattest du es richtig?</div>'
         : '<div class="result no">Keine Antwort abgegeben.</div>';
   }
+  res += roundHtml(st, r);
   setHtml($('#pResult'), res);
   setHtml($('#pAuto'), st.timer && st.timer.kind === 'next' ? autoBarHtml('Nächste Karte gleich …') : '');
-  drawStand(st, r);
   $('#pDraw').innerHTML = '';
   if (st.mode === 'turns' || st.mode === 'together') drawTimelineArea(st, meP, myTurn);
   else if (st.mode === 'bingo') drawBingoArea(st, meP, myTask);
   else { $('#pMain').innerHTML = ''; $('#pActions').innerHTML = ''; }
+  drawStand(st, r);
   drawSelfButtons(st, meP);
   drawOthers(r, st);
   playerTick();
 }
 const onlineSet = r => new Set(playerList(r && r.players).filter(([, p]) => p.online !== false).map(([, p]) => nameKey(p.name)));
-/* Spielstand: jeder sieht, wie weit alle sind. Antippen zeigt im Zeitstrahl-Modus die Karten der Person. Am Ende die Rangliste. */
+/* Spielstand: jeder sieht, wie weit alle sind, klein und höchstens die besten 8. Antippen zeigt im Zeitstrahl-Modus die Karten der Person.
+   Bei Bingo steht er unter den Notizen, direkt über der Bingokarte. Am Ende die volle Rangliste. */
+const STAND_MAX = 8;
 function drawStand(st, r){
-  const box = $('#pStand');
+  const slot = st.mode === 'bingo' && st.phase !== 'over' ? $('#pStandSlot') : null;
+  const box = slot || $('#pStand'), other = slot ? $('#pStand') : $('#pStandSlot');
+  if (other && other.innerHTML) { other.innerHTML = ''; delete other.dataset.html; }
   if (!st.pl || !['turns', 'together', 'bingo'].includes(st.mode)) { box.innerHTML = ''; delete box.dataset.html; return; }
   const on = onlineSet(r), present = new Set(playerList(r.players).map(([, p]) => nameKey(p.name)));
   const list = standings(st.pl, st.order, st.mode, st.win, st.phase === 'over' ? st.winners : []).filter(x => present.has(x.k));
@@ -3515,9 +3563,11 @@ function drawStand(st, r){
     return;
   }
   const timeline = st.mode !== 'bingo';
+  const more = list.length - STAND_MAX;
   const html = '<div class="stand"><div class="tlhead"><h2>Spielstand</h2><span class="muted small">' + (timeline ? 'Ziel: ' + st.target + ' Karten' : 'Bingo: ' + (WIN_NAMES[st.win] || 'Eine Reihe')) + '</span></div><div class="schips">' +
-    list.map(x => '<button type="button" class="schip' + (x.k === seat.key ? ' me' : '') + (on.has(x.k) ? '' : ' off') + '" data-k="' + esc(x.k) + '" style="--p:' + scorePct(st.pl[x.k], st.mode, st.win, st.target).toFixed(2) + '"' + (timeline ? '' : ' disabled') + '>' +
-      '<span class="sn">' + esc(nm(x.k)) + '</span><span class="ss">' + esc(sc(x.k)) + '</span></button>').join('') + '</div></div>';
+    list.slice(0, STAND_MAX).map(x => '<button type="button" class="schip' + (x.k === seat.key ? ' me' : '') + (on.has(x.k) ? '' : ' off') + '" data-k="' + esc(x.k) + '" style="--p:' + scorePct(st.pl[x.k], st.mode, st.win, st.target).toFixed(2) + '"' + (timeline ? '' : ' disabled') + '>' +
+      '<span class="sn">' + esc(nm(x.k)) + '</span><span class="ss">' + esc(sc(x.k)) + '</span></button>').join('') +
+    (more > 0 ? '<span class="smore">+ ' + more + ' weitere</span>' : '') + '</div></div>';
   if (box.dataset.html === html) return;
   setHtml(box, html);
   if (timeline) box.querySelectorAll('.schip').forEach(b => b.onclick = () => {
@@ -3526,6 +3576,20 @@ function drawStand(st, r){
     $('#peekBody').innerHTML = '<div class="tl">' + (lineHtml(p.line) || '<p class="muted">Noch keine Karten.</p>') + '</div>';
     $('#peek').hidden = false;
   });
+}
+/* Nach dem Aufdecken: wer lag in dieser Runde richtig, wer falsch (Zeitstrahl gleichzeitig und Bingo).
+   Im Stechen stehen nur die, die mitgespielt haben. */
+function roundHtml(st, r){
+  if (!st.pl || !st.cards || st.phase !== 'reveal' || !['together', 'bingo'].includes(st.mode)) return '';
+  const present = new Set(playerList(r.players).map(([, p]) => nameKey(p.name)));
+  const keys = (st.played || st.order || []).filter(k => st.pl[k] && present.has(k));
+  if (!keys.length) return '';
+  const right = keys.filter(k => st.pl[k].result === 'right').length, nw = ' style="white-space:nowrap"';
+  const state = p => p.result === 'right' ? '<span class="ok">✓ richtig</span>' : p.result === 'wrong' ? '<span class="bad"' + nw + '>✗ falsch</span>'
+    : '<span class="muted">' + (p.result === 'pending' ? 'bewertet sich …' : st.mode === 'bingo' ? 'keine Antwort' : 'nicht eingeordnet') + '</span>';
+  return '<div class="box done" id="pRound"><div class="boxhead"><h2>Diese Runde</h2><span class="muted small">' + right + ' von ' + keys.length + ' richtig</span></div>' +
+    keys.map(k => { const p = st.pl[k]; return '<div class="drow"><span class="dn">' + esc(p.name + (k === seat.key ? ' (du)' : '')) +
+      (p.said ? ' <span class="muted">· „' + esc(p.said) + '“</span>' : '') + '</span>' + state(p) + '</div>'; }).join('') + '</div>';
 }
 // Nach dem eigenen Einloggen: wer hat schon, wer überlegt noch
 function doneHtml(st, keys, kind){
@@ -3632,7 +3696,8 @@ function drawBingoArea(st, meP, myTask){
       nb.append(lab, ta, txt('p', 'muted small', 'Nur auf deinem Handy, niemand sonst sieht sie.'));
       main.append(nb);
     }
-    main.append(gridBox);
+    const standSlot = el('div'); standSlot.id = 'pStandSlot';
+    main.append(standSlot, gridBox);
     if (answering) {
       const f = buildAnswerForm(myTask, st.check, body, { songs:st.songs || 1, onChange:() => { const e = $('#pFormErr'); if (e) e.textContent = ''; } });
       if (needsInput(myTask, st.check)) { seat.form = f; const e = el('p', 'err'); e.id = 'pFormErr'; body.append(e); }
@@ -3656,6 +3721,7 @@ function drawBingoArea(st, meP, myTask){
   }
   if (answering && seat.form && !veiled) {
     const b = txt('button', 'btn primary', sent ? 'Geänderte Antwort abschicken' : 'Antwort abschicken'); b.type = 'button';
+    if (st.color !== null && st.color !== undefined && COLORS[st.color]) { b.style.background = COLORS[st.color].bg; b.style.color = COLORS[st.color].fg; }
     b.onclick = () => {
       const v = seat.form.val, has = Object.values(v).some(x => x !== undefined && String(x).trim() !== '');
       const err = $('#pFormErr');
@@ -3711,16 +3777,25 @@ function drawBingoArea(st, meP, myTask){
     gb.append(lb);
   }
 }
+// Rückfrage mit eigenem Text auf dem zweiten Knopf (sonst „Abbrechen“)
+async function askNo(text, yes, no){
+  const b = $('#askNo'), p = ask(text, yes);
+  b.textContent = no;
+  try { return await p; } finally { b.textContent = 'Abbrechen'; }
+}
 /* Spielt das Haupthandy mit, klickt jeder selbst weiter: im Zeitstrahl reihum der, der dran war; sonst alle mit „Bereit“ */
 function drawSelfButtons(st, meP){
   const box = $('#pNext'); box.innerHTML = '';
   if (!st.self || !meP || st.paused || st.phase === 'over') return;
   const name = k => (st.pl[k] && st.pl[k].name) || '';
   const tag = st.round + '|' + st.phase;
-  const add = (label, act, primary) => {
+  const add = (label, act, primary, check) => {
     const sent = seat.sentNext === tag + '|' + act.t, b = txt('button', 'btn ' + (primary ? 'primary' : 'secondary'), sent ? 'Gesendet' : label);
     b.type = 'button'; b.disabled = sent;
-    b.onclick = () => { seat.sentNext = tag + '|' + act.t; b.disabled = true; b.textContent = 'Gesendet'; send(act); };
+    b.onclick = async () => {
+      if (check && !(await check(act))) return;
+      seat.sentNext = tag + '|' + act.t; b.disabled = true; b.textContent = 'Gesendet'; send(act);
+    };
     box.append(b);
   };
   if (st.mode === 'turns') {
@@ -3729,10 +3804,19 @@ function drawSelfButtons(st, meP){
     return;
   }
   if (!(st.phase === 'ready' && st.total) && !(st.phase === 'reveal' && st.cards)) return;
-  if (st.mode === 'bingo' && st.phase === 'reveal' && (meP.result === 'pending' || (meP.canMark !== null && meP.canMark !== undefined))) return;
+  if (st.mode === 'bingo' && st.phase === 'reveal' && meP.result === 'pending') return;
+  const openField = st.mode === 'bingo' && st.phase === 'reveal' && meP.canMark !== null && meP.canMark !== undefined;
   const on = onlineSet(seat.room), keys = (st.order || []).filter(k => st.pl[k] && on.has(k)), n = keys.filter(k => st.pl[k].ready).length;
   if (meP.ready) { box.append(txt('p', 'muted small nexthint', '✓ Du bist bereit. ' + n + ' von ' + keys.length + ' sind bereit.')); return; }
-  add(st.round ? 'Weiter zur nächsten Runde' : 'Bereit, los geht’s', { t:'ready' }, true);
+  // Richtig getippt, aber noch kein Feld befüllt: erst nachfragen. „Feld befüllen“ scrollt zur Bingokarte.
+  const checkField = openField ? async act => {
+    const live = seat.room && seat.room.state && seat.room.state.pl && seat.room.state.pl[seat.key];
+    if (!live || live.canMark === null || live.canMark === undefined) return true;
+    if (await askNo('Du hast dein ' + COLORS[live.canMark].adj + ' Feld noch nicht befüllt. Gehst du trotzdem weiter, verfällt es in dieser Runde.', 'Trotzdem weiter', 'Feld befüllen')) { act.skipMark = true; return true; }
+    const g = $('#pGridBox'); if (g) g.scrollIntoView({ behavior:'smooth', block:'start' });
+    return false;
+  } : null;
+  add(st.round ? 'Weiter zur nächsten Runde' : 'Bereit, los geht’s', { t:'ready' }, true, checkField);
   box.append(txt('p', 'muted small nexthint', n + ' von ' + keys.length + ' sind bereit. Es geht weiter, sobald alle getippt haben.'));
 }
 function drawOthers(r, st){
@@ -3876,7 +3960,7 @@ function wire(){
   $('#mixName').onkeydown = e => { if (e.key === 'Enter') saveMix(); };
   $('#devReload').onclick = () => loadDevices();
   $('#devSelect').onchange = e => pickDevice(e.target.value);
-  $('#devTest').onclick = testDevice;
+  $('#devTest').onclick = testSilence;
   document.querySelectorAll('#afterSeg button').forEach(b => b.onclick = () => { store.set('after', b.dataset.v); renderAfter(); });
   $('#connectPhone').onclick = () => watchPhone(null);
   $('#msgSpotify').onclick = () => { const f = retryFn; $('#msg').hidden = true; watchPhone(f); };
@@ -3926,5 +4010,24 @@ function wire(){
   render();
 })();
 </script>
+<style>
+/* Bingo: Schallplatte, Ring und Etikett in der Farbe der Runde */
+.disc.tint{--accent:var(--tint)}
+.disc.tint .record{background:radial-gradient(circle closest-side,transparent 0 47%,rgba(255,255,255,.14) 47.6% 48.6%,transparent 49.2% 63%,rgba(255,255,255,.12) 63.6% 64.6%,transparent 65.2% 79%,rgba(255,255,255,.1) 79.6% 80.6%,transparent 81.2%),
+  repeating-radial-gradient(circle closest-side,color-mix(in srgb,var(--tint) 62%,#15081b) 0 1.4%,color-mix(in srgb,var(--tint) 46%,#15081b) 1.4% 2.8%)}
+.disc.tint .count,.disc.tint:has(.prog.alt) .count{background:var(--tint);color:var(--tintfg)}
+.disc.tint .ring .prog.alt{stroke:var(--tint)}
+/* Spielstand klein */
+.stand{margin-top:.9rem}
+.stand .tlhead h2{font-size:.85rem}
+.stand .tlhead .small{font-size:.75rem}
+.schips{gap:.25rem;margin-top:.3rem}
+.schip{gap:.3rem;border-width:1.5px;border-radius:8px;padding:.1rem .42rem .34rem;font-size:.74rem;min-width:0;
+  background:linear-gradient(var(--accent),var(--accent)) left .42rem bottom .15rem/calc((100% - .84rem) * var(--p)) 2.5px no-repeat,
+             linear-gradient(var(--line),var(--line)) left .42rem bottom .15rem/calc(100% - .84rem) 2.5px no-repeat,var(--surface)}
+.schip .sn{max-width:7.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.schip .ss{font-size:.64rem}
+.smore{align-self:center;font-size:.72rem;color:var(--muted);padding:0 .2rem}
+</style>
 </body>
 </html>
