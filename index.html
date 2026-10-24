@@ -406,15 +406,9 @@ ol.steps li{margin:.25rem 0}
 .ctable{display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1fr);gap:.35rem .6rem;align-items:center;font-size:.82rem}
 .ctable .ch{font-size:.68rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
 .ctable .cp{border-radius:8px;padding:.22rem .5rem;font-weight:800;font-size:.74rem;text-align:center;min-width:3.6rem}
-.ctable .ct{line-height:1.2;font-weight:600}
-/* Bingo-Farben-Seite */
+.ctable .ct{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
 .lvlbox h2{margin-bottom:.2rem}
-.lvlbox h2 + .colorrow{border-top:0}
-.colorrow .chev{font-size:1.4rem}
-/* Aufgabe wählen */
-.picksec{margin-top:1rem}
-.picksec .picklist{margin-top:.4rem}
-/* Start-Übersicht */
+/* Start-Übersicht vor dem Spiel */
 .intro{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:1.2rem;overflow-y:auto;
   background:radial-gradient(circle at 50% 28%,color-mix(in srgb,var(--accent) 26%,var(--bg)),var(--bg) 72%);animation:ifade .35s ease both}
 .intro.out{animation:iout .4s ease forwards}
@@ -1820,7 +1814,7 @@ function bingoMissing(marks, win){
   }
   return Math.min(...LINES.map(l => l.filter(i => !marks[i]).length));
 }
-  /* ---------- Hauptmenü und Regeln ---------- */
+/* ---------- Hauptmenü und Regeln ---------- */
 const MODES = {
   turns:{ name:'Zeitstrahl reihum', desc:'Einer ist dran und ordnet ein, die anderen schauen zu.' },
   together:{ name:'Zeitstrahl gleichzeitig', desc:'Alle ordnen denselben Song in ihren eigenen Zeitstrahl ein.' },
@@ -1976,6 +1970,7 @@ function renderHome(){
   if (!rb.hidden) rb.textContent = 'Weiterspielen: ' + MODES[saved.mode].name + ', Runde ' + saved.round;
   $('#dropResume').hidden = rb.hidden;
   renderHostBox();
+  renderMemBox();
 }
 async function dropResume(){
   if (!(await ask('Gespeichertes Spiel verwerfen? Es lässt sich danach nicht mehr fortsetzen.', 'Verwerfen'))) return;
@@ -2179,6 +2174,99 @@ function saveBuilder(){
   assignTask(pickColor, t.id);
   toast('„' + t.name + '“ gespeichert und ' + COLORS[pickColor].name + ' (' + LEVEL_NAMES[pickLevel] + ') zugewiesen.');
   openColors();
+}
+
+/* ---------- Song-Gedächtnis ----------
+   Ein benanntes Gedächtnis (etwa „Piet & Lena“) merkt sich jeden gespielten Song. Ist es beim Spielstart geladen,
+   kommen diese Songs nicht mehr dran, in jedem Modus und über viele Spiele hinweg, bis es zurückgesetzt wird.
+   Ohne geladenes Gedächtnis läuft alles wie immer. Gesichert wird es wie die Einstellungen. */
+SYNC_KEYS.push('memories', 'memOn');
+const memories = () => store.get('memories', []) || [];
+const memActive = () => { const id = store.get('memOn', null); return id ? memories().find(m => m.id === id) || null : null; };
+function memChange(id, fn){
+  const list = memories(), m = list.find(x => x.id === id);
+  if (!m) return null;
+  fn(m); m.at = Date.now(); store.set('memories', list);
+  return m;
+}
+// Gezogene Karte merken (k = Songschlüssel aus Titel und Künstler)
+function memRemember(id, k){ if (id && k) memChange(id, m => { if (!m.songs.includes(k)) m.songs.push(k); }); }
+function memForget(id, k){ if (id && k) memChange(id, m => { m.songs = m.songs.filter(x => x !== k); }); }
+function setMemOn(id){ if (id) store.set('memOn', id); else store.del('memOn'); renderMemBox(); }
+async function memReset(id){
+  const m = memories().find(x => x.id === id); if (!m) return false;
+  if (!(await ask('Gedächtnis „' + m.name + '“ zurücksetzen? Alle ' + m.songs.length + ' gespielten Songs können dann wieder drankommen.', 'Zurücksetzen'))) return false;
+  memChange(id, x => { x.songs = []; });
+  toast('„' + m.name + '“ ist zurückgesetzt.');
+  renderMemBox(); if (!$('#peek').hidden && $('#memNew')) memSheet();
+  return true;
+}
+const songsWord = n => n === 1 ? '1 Song' : n + ' Songs';
+function renderMemBox(){
+  if (!$('#rulesBox')) return;
+  let box = $('#memBox');
+  if (!box) { box = el('div', 'box'); box.id = 'memBox'; $('#rulesBox').after(box); }
+  const m = memActive();
+  box.innerHTML = '';
+  box.style.borderColor = m ? 'var(--accent)' : '';
+  const head = el('div', 'boxhead'); head.style.marginBottom = '.4rem';
+  const b = txt('button', 'nav sm', m ? 'Wechseln' : 'Laden'); b.type = 'button'; b.id = 'memOpen'; b.onclick = memSheet;
+  head.append(txt('h2', '', 'Song-Gedächtnis'), b); box.append(head);
+  if (!m) {
+    box.append(Object.assign(txt('p', 'muted small', 'Spielst du öfter mit denselben Leuten? Lade ihr Gedächtnis, dann kommt kein Song doppelt, auch nicht über mehrere Spiele hinweg. Ohne Gedächtnis läuft alles wie immer.'), { style:'margin:0' }));
+    return;
+  }
+  const p = el('p'); p.style.margin = '0'; p.append('„', txt('b', '', m.name), '“ ist geladen.');
+  box.append(p, Object.assign(txt('p', 'muted small', songsWord(m.songs.length) + ' schon gespielt. Sie kommen nicht mehr dran, bis du zurücksetzt.'), { id:'memInfo', style:'margin:.2rem 0 .7rem' }));
+  const row = el('div'); row.style.cssText = 'display:flex;flex-wrap:wrap;gap:.4rem';
+  const r = txt('button', 'nav sm', 'Zurücksetzen'); r.type = 'button'; r.id = 'memReset'; r.onclick = () => memReset(m.id);
+  const off = txt('button', 'nav sm', 'Ohne Gedächtnis spielen'); off.type = 'button'; off.id = 'memOff'; off.onclick = () => setMemOn(null);
+  row.append(r, off); box.append(row);
+}
+// Gedächtnis wählen, neu anlegen oder löschen
+function memSheet(){
+  $('#peekTitle').textContent = 'Song-Gedächtnis';
+  const body = $('#peekBody'); body.innerHTML = '';
+  const cur = store.get('memOn', null), list = memories();
+  body.append(Object.assign(txt('p', 'muted small', 'Lege für jede Runde, mit der du öfter spielst, ein eigenes Gedächtnis an. Geladen ist immer nur eins.'), { style:'margin:0 0 .6rem' }));
+  if (list.length) {
+    const lb = el('div', 'box picklist'); lb.style.marginTop = '0';
+    for (const m of [...list].sort((a, b) => (b.at || 0) - (a.at || 0))) {
+      const on = m.id === cur, row = el('button', 'pick' + (on ? ' cur' : '')); row.type = 'button';
+      row.append(txt('span', 'pn', (on ? '✓ ' : '') + m.name), txt('span', 'pt', songsWord(m.songs.length) + ' gespielt'));
+      const d = txt('span', 'del', '×'); d.setAttribute('role', 'button'); d.setAttribute('aria-label', m.name + ' löschen');
+      d.onclick = async ev => {
+        ev.stopPropagation();
+        if (!(await ask('Gedächtnis „' + m.name + '“ löschen? Die Liste der gespielten Songs ist dann weg.', 'Löschen'))) return;
+        store.set('memories', memories().filter(x => x.id !== m.id));
+        if (store.get('memOn', null) === m.id) store.del('memOn');
+        renderMemBox(); memSheet();
+      };
+      row.append(d);
+      row.onclick = () => { setMemOn(m.id); $('#peek').hidden = true; toast('„' + m.name + '“ ist geladen.'); };
+      lb.append(row);
+    }
+    body.append(lb);
+  }
+  const lab = txt('label', '', 'Neues Gedächtnis'); lab.htmlFor = 'memNew'; lab.style.cssText = 'display:block;font-weight:700;margin:1rem 0 .35rem';
+  const inp = el('input', 'field'); inp.id = 'memNew'; inp.maxLength = 30; inp.autocomplete = 'off'; inp.placeholder = 'z. B. Piet & Lena'; inp.setAttribute('autocapitalize', 'words');
+  const err = el('p', 'err'), add = txt('button', 'btn primary', 'Anlegen und laden'); add.type = 'button'; add.id = 'memAdd'; add.style.marginTop = '.5rem';
+  add.onclick = () => {
+    const name = cleanName(inp.value).slice(0, 30);
+    if (!name) { err.textContent = 'Gib einen Namen ein.'; return; }
+    if (memories().some(x => x.name.toLowerCase() === name.toLowerCase())) { err.textContent = 'Den Namen gibt es schon. Tippe oben darauf, um es zu laden.'; return; }
+    const m = { id:'m' + Date.now().toString(36), name, songs:[], at:Date.now() };
+    store.set('memories', [...memories(), m]); setMemOn(m.id);
+    $('#peek').hidden = true; toast('„' + name + '“ ist angelegt und geladen.');
+  };
+  inp.onkeydown = e => { if (e.key === 'Enter') add.click(); };
+  body.append(lab, inp, add, err);
+  if (cur) {
+    const off = txt('button', 'link', 'Ohne Gedächtnis spielen'); off.type = 'button'; off.style.cssText = 'display:block;margin:.6rem auto 0';
+    off.onclick = () => { setMemOn(null); $('#peek').hidden = true; };
+    body.append(off);
+  }
+  $('#peek').hidden = false;
 }
 
 /* ---------- Spielraum am Haupthandy ---------- */
@@ -2485,16 +2573,21 @@ function takeCard(k){
   let i = find();
   if (i < 0) {
     shuffle(d.cards); d.pos = 0;
-    toast(ok && d.cards.some(c => !fits(c)) ? 'Alle Songs aus den Playlists von ' + ((M.pl[k] && M.pl[k].name) || 'diesem Spieler') + ' waren dran. Der Stapel ist neu gemischt.' : 'Alle Karten waren dran. Der Stapel ist neu gemischt.');
+    if (M.mem) toast('Alle Songs, die mit diesem Gedächtnis noch übrig waren, sind durch. Ab jetzt können sich Songs wiederholen.');
+    else toast(ok && d.cards.some(c => !fits(c)) ? 'Alle Songs aus den Playlists von ' + ((M.pl[k] && M.pl[k].name) || 'diesem Spieler') + ' waren dran. Der Stapel ist neu gemischt.' : 'Alle Karten waren dran. Der Stapel ist neu gemischt.');
     i = find();
     if (i < 0) i = 0;
   }
   [d.cards[d.pos], d.cards[i]] = [d.cards[i], d.cards[d.pos]];
-  return { ...d.cards[d.pos++] };
+  const card = { ...d.cards[d.pos++] };
+  if (M.mem) memRemember(M.mem, card.k);
+  return card;
 }
 const drawKey = () => M.mode === 'turns' ? M.turn : null;
 function dropCard(c){
   const d = M.deck, i = d.cards.findIndex(x => x.uri === c.uri);
+  // Ein Song, der sich nicht abspielen ließ, zählt nicht als gespielt
+  if (M.mem) memForget(M.mem, c.k);
   if (i < 0) return;
   d.cards.splice(i, 1); if (i < d.pos) d.pos--;
 }
@@ -2562,6 +2655,24 @@ async function startMatch(){
     let cards = await buildDeck(ids, t => { if (M) { M.msg = t; renderMatch(); } });
     if (M.mode !== 'solo') cards = cards.filter(c => /^\d{4}$/.test(c.year));
     if (cards.length < (M.mode === 'solo' ? 1 : 4)) throw new UserError('In den gewählten Playlists gibt es zu wenige abspielbare Songs.');
+    // Song-Gedächtnis: schon gespielte Songs bleiben draußen. Sind (fast) alle durch, fragen.
+    let memNote = '';
+    const mem = memActive();
+    if (mem && M === mm) {
+      const played = new Set(mem.songs), fresh = cards.filter(c => !played.has(c.k));
+      if (fresh.length < (M.mode === 'solo' ? 1 : 4)) {
+        const left = fresh.length ? 'sind von ' + cards.length + ' Songs der gewählten Playlists nur noch ' + fresh.length + ' übrig, zu wenig für ein Spiel.' : 'sind alle ' + cards.length + ' Songs der gewählten Playlists schon gespielt.';
+        const reset = await ask('Mit dem Gedächtnis „' + mem.name + '“ ' + left + ' Gedächtnis zurücksetzen und alle Songs wieder freigeben?', 'Zurücksetzen und spielen');
+        if (M !== mm) return;
+        if (!reset) { hideIntro(); M = null; store.del('match'); pushState(); openHome(); toast('Wähle unter Musik andere Playlists oder setze das Gedächtnis zurück.'); return; }
+        memChange(mem.id, x => { x.songs = []; });
+        memNote = '„' + mem.name + '“ ist zurückgesetzt. ';
+      } else {
+        if (fresh.length < cards.length) memNote = songsWord(cards.length - fresh.length) + ' schon gespielt und übersprungen. ';
+        cards = fresh;
+      }
+      M.mem = mem.id;
+    }
     // Startkarten und die ersten Songs schon während der Übersicht auf das Originaljahr prüfen
     const early = cards.slice(0, Math.min(cards.length, (M.mode === 'solo' ? 0 : onlineKeys().size + 1) + 4));
     await Promise.race([Promise.all(early.map(verifyYear)), sleep(Math.max(0, mm.intro.ms - (Date.now() - t0)) + 1200)]);
@@ -2575,7 +2686,7 @@ async function startMatch(){
     syncPlayers();
     if (M.mode === 'turns') M.turn = nextTurn(M.order[0], true);
     saveMatch(); pushState(); renderMatch();
-    toast(cards.length + ' Songs im Stapel.');
+    toast(memNote + cards.length + ' Songs im Stapel.');
     prefetchYears();
   } catch (e) { if (M !== mm) return; hideIntro(); M = null; store.del('match'); openHome(); handleError(e, startMatch); }
 }
@@ -2592,6 +2703,8 @@ function introData(r){
   if (r.mode === 'turns') goal.push(['', r.turnSecs ? r.turnSecs + ' s zum Einordnen' : 'Einordnen ohne Zeitlimit']);
   if (r.mode === 'together') goal.push(['', r.placeSecs + ' s zum Einordnen']);
   if (r.mode === 'bingo') goal.push(['', r.answerSecs + ' s zum Antworten']);
+  const mem = memActive();
+  if (mem) goal.push(['', 'Gedächtnis: ' + mem.name]);
   return { mode:r.mode, goal, ppl, ms:INTRO_MS };
 }
 function introHtml(d){
@@ -4028,6 +4141,12 @@ function wire(){
 .schip .sn{max-width:7.5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .schip .ss{font-size:.64rem}
 .smore{align-self:center;font-size:.72rem;color:var(--muted);padding:0 .2rem}
+/* Farbtabelle, Farben-Seite und Aufgabenliste */
+.ctable .ct{overflow:visible;white-space:normal;text-overflow:clip;color:inherit;line-height:1.2;font-weight:600}
+.lvlbox h2 + .colorrow{border-top:0}
+.colorrow .chev{font-size:1.4rem}
+.picksec{margin-top:1rem}
+.picksec .picklist{margin-top:.4rem}
 </style>
 </body>
 </html>
